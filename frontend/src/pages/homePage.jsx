@@ -94,101 +94,59 @@ const HomePage = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card" style={{ maxWidth: '600px' }}>
+      <div className="auth-card home-card">
         <div className="auth-header">
           <h1 className="auth-title">Welcome to Gen-Link! 🎉</h1>
           <p className="auth-subtitle">Your account has been created successfully</p>
         </div>
 
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          gap: '30px',
-          marginTop: '30px'
-        }}>
+        <div className="home-content">
           {/* Profile Image */}
-          <div style={{ textAlign: 'center' }}>
+          <div className="profile-image-container">
             {profileImageUrl ? (
               <img
                 src={profileImageUrl}
                 alt="Profile"
-                style={{
-                  width: '150px',
-                  height: '150px',
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  border: '4px solid #667eea',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-                }}
+                className="profile-image"
               />
             ) : (
-              <div
-                style={{
-                  width: '150px',
-                  height: '150px',
-                  borderRadius: '50%',
-                  backgroundColor: '#e1e5e9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '48px',
-                  color: '#666',
-                  border: '4px solid #667eea',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-                }}
-              >
+              <div className="profile-placeholder">
                 👤
               </div>
             )}
           </div>
 
           {/* Welcome Message */}
-          <div style={{ textAlign: 'center' }}>
-            <h2 style={{ 
-              color: '#333', 
-              margin: '0 0 10px 0',
-              fontSize: '2rem',
-              fontWeight: '600'
-            }}>
+          <div className="welcome-section">
+            <h2 className="welcome-title">
               Hello, {user?.username}! 👋
             </h2>
-            <p style={{ 
-              color: '#666', 
-              margin: '0 0 20px 0',
-              fontSize: '1.1rem'
-            }}>
+            <p className="welcome-subtitle">
               Welcome to the Gen-Link community!
             </p>
             
             {/* User Details */}
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '20px', 
-              borderRadius: '10px',
-              margin: '20px 0',
-              border: '1px solid #e1e5e9'
-            }}>
-              <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Your Account Details</h3>
-              <div style={{ display: 'grid', gap: '10px', textAlign: 'left' }}>
-                <p style={{ margin: '5px 0', color: '#666' }}>
+            <div className="user-details-card">
+              <h3 className="details-title">Your Account Details</h3>
+              <div className="details-grid">
+                <p className="detail-item">
                   <strong>Username:</strong> {user?.username}
                 </p>
-                <p style={{ margin: '5px 0', color: '#666' }}>
+                <p className="detail-item">
                   <strong>Contact:</strong> {user?.contactNumber}
                 </p>
-                <p style={{ margin: '5px 0', color: '#666' }}>
+                <p className="detail-item">
                   <strong>ID Type:</strong> {user?.governmentIdType}
                 </p>
-                <p style={{ margin: '5px 0', color: '#666' }}>
+                <p className="detail-item">
                   <strong>Verification:</strong> {user?.idVerificationMethod === 'number' ? 'ID Number' : 'ID Image'}
                 </p>
                 {user?.idVerificationMethod === 'number' && user?.governmentId && (
-                  <p style={{ margin: '5px 0', color: '#666' }}>
+                  <p className="detail-item">
                     <strong>ID Number:</strong> {user.governmentId}
                   </p>
                 )}
-                <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
+                <p className="detail-item detail-small">
                   <strong>Joined:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Today'}
                 </p>
               </div>
@@ -196,41 +154,24 @@ const HomePage = () => {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '15px', 
-            flexWrap: 'wrap',
-            justifyContent: 'center'
-          }}>
+          <div className="action-buttons">
             <button 
               onClick={handleViewUsers}
-              className="submit-button"
-              style={{ 
-                backgroundColor: '#28a745',
-                minWidth: '150px'
-              }}
+              className="submit-button action-btn action-btn-success"
             >
               👥 View All Users
             </button>
             
             <button 
               onClick={() => window.location.href = '/'}
-              className="submit-button"
-              style={{ 
-                backgroundColor: '#17a2b8',
-                minWidth: '150px'
-              }}
+              className="submit-button action-btn action-btn-info"
             >
               ➕ Add Another User
             </button>
             
             <button 
               onClick={handleLogout}
-              className="submit-button"
-              style={{ 
-                backgroundColor: '#dc3545',
-                minWidth: '150px'
-              }}
+              className="submit-button action-btn action-btn-danger"
             >
               🚪 Logout
             </button>
@@ -238,15 +179,8 @@ const HomePage = () => {
         </div>
 
         {/* Success Message */}
-        <div style={{ 
-          marginTop: '30px',
-          padding: '15px',
-          backgroundColor: '#d4edda',
-          border: '1px solid #c3e6cb',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
-          <p style={{ margin: '0', color: '#155724', fontWeight: '500' }}>
+        <div className="success-message">
+          <p className="success-text">
             ✅ Your account is now active and ready to use!
           </p>
         </div>

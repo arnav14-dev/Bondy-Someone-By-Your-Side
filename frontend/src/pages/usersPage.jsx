@@ -110,103 +110,73 @@ const UsersPage = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card" style={{ maxWidth: '800px' }}>
+      <div className="auth-card users-card">
         <div className="auth-header">
           <h1 className="auth-title">Registered Users</h1>
           <p className="auth-subtitle">View all registered users and their verification details</p>
         </div>
 
-        <div style={{ marginTop: '20px' }}>
+        <div className="users-content">
           {users.length === 0 ? (
-            <p>No users found.</p>
+            <p className="no-users-message">No users found.</p>
           ) : (
-            <div style={{ display: 'grid', gap: '20px' }}>
+            <div className="users-grid">
               {users.map((user) => (
-                <div 
-                  key={user._id} 
-                  style={{ 
-                    border: '1px solid #e1e5e9', 
-                    borderRadius: '8px', 
-                    padding: '20px',
-                    backgroundColor: '#f8f9fa'
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                <div key={user._id} className="user-card">
+                  <div className="user-card-content">
                     {/* Profile Picture */}
-                    <div style={{ flexShrink: 0 }}>
+                    <div className="user-profile-image">
                       {user.profilePicture && getImageUrl(user.profilePicture) ? (
                         <img
                           src={getImageUrl(user.profilePicture)}
                           alt="Profile"
-                          style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '2px solid #667eea'
-                          }}
+                          className="profile-img"
                         />
                       ) : (
-                        <div
-                          style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            backgroundColor: '#e1e5e9',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '24px',
-                            color: '#666'
-                          }}
-                        >
+                        <div className="profile-placeholder-small">
                           👤
                         </div>
                       )}
                     </div>
 
                     {/* User Details */}
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>
+                    <div className="user-details">
+                      <h3 className="user-name">
                         {user.username}
                       </h3>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Contact:</strong> {user.contactNumber}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>ID Type:</strong> {user.governmentIdType}
-                      </p>
-                      <p style={{ margin: '5px 0', color: '#666' }}>
-                        <strong>Verification:</strong> {user.idVerificationMethod === 'number' ? 'ID Number' : 'ID Image'}
-                      </p>
-                      
-                      {user.idVerificationMethod === 'number' && user.governmentId && (
-                        <p style={{ margin: '5px 0', color: '#666' }}>
-                          <strong>ID Number:</strong> {user.governmentId}
+                      <div className="user-info-grid">
+                        <p className="user-info-item">
+                          <strong>Contact:</strong> {user.contactNumber}
                         </p>
-                      )}
+                        <p className="user-info-item">
+                          <strong>ID Type:</strong> {user.governmentIdType}
+                        </p>
+                        <p className="user-info-item">
+                          <strong>Verification:</strong> {user.idVerificationMethod === 'number' ? 'ID Number' : 'ID Image'}
+                        </p>
+                        
+                        {user.idVerificationMethod === 'number' && user.governmentId && (
+                          <p className="user-info-item">
+                            <strong>ID Number:</strong> {user.governmentId}
+                          </p>
+                        )}
 
-                      <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
-                        <strong>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}
-                      </p>
+                        <p className="user-info-item user-info-small">
+                          <strong>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
 
                     {/* ID Image */}
                     {user.idVerificationMethod === 'image' && user.idImage && getImageUrl(user.idImage) && (
-                      <div style={{ flexShrink: 0 }}>
-                        <p style={{ margin: '0 0 10px 0', fontSize: '0.9em', color: '#666' }}>
+                      <div className="user-id-image">
+                        <p className="id-image-label">
                           <strong>ID Image:</strong>
                         </p>
                         <img
                           src={getImageUrl(user.idImage)}
                           alt="ID Verification"
-                          style={{
-                            width: '120px',
-                            height: '80px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd'
-                          }}
+                          className="id-image"
                         />
                       </div>
                     )}
@@ -217,25 +187,22 @@ const UsersPage = () => {
           )}
         </div>
 
-        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <div className="users-actions">
           <button 
             onClick={() => window.location.href = '/'}
-            className="submit-button"
-            style={{ marginRight: '10px' }}
+            className="submit-button action-btn action-btn-primary"
           >
             Back to Registration
           </button>
           <button 
             onClick={() => window.location.href = '/home'}
-            className="submit-button"
-            style={{ marginRight: '10px', backgroundColor: '#17a2b8' }}
+            className="submit-button action-btn action-btn-info"
           >
             Go to Homepage
           </button>
           <button 
             onClick={fetchUsers}
-            className="submit-button"
-            style={{ backgroundColor: '#28a745' }}
+            className="submit-button action-btn action-btn-success"
           >
             Refresh
           </button>
