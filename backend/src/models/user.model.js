@@ -3,8 +3,7 @@ import bcrypt from 'bcrypt';
 const userSchema = new mongoose.Schema({
     username:{
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     contactNumber:{
         type: String,
@@ -19,36 +18,10 @@ const userSchema = new mongoose.Schema({
         minlength: 8,  
         maxlength: 50,
     },
-    governmentId:{
-        type: String,
-        required: false,
-        unique: true,
-        sparse: true, // Allows multiple null values
-        minlength: 10,
-        maxlength: 20,
-        default: undefined
-    },
-    governmentIdType:{
-        type: String,
-        required: true,
-        enum: ['Aadhaar', 'PAN', 'Voter ID', 'Driving License']
-    },
     profilePicture:{
         type: String,
     },
     profilePictureOriginalName:{
-        type: String,
-    },
-    idVerificationMethod:{
-        type: String,
-        required: true,
-        enum: ['number', 'image']
-    },
-    idImage:{
-        type: String,
-        required: false,
-    },
-    idImageOriginalName:{
         type: String,
     },
     createdAt:{
@@ -60,8 +33,6 @@ const userSchema = new mongoose.Schema({
         default: Date.now()
     }
 });
-
-// indexing - removed duplicate indexes since they're already defined in schema fields
 
 // pre-save hook
 userSchema.pre('save', async function(next) {

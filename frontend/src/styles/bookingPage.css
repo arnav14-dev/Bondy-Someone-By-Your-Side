@@ -1,0 +1,90 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Booking Page Styles */
+.booking-page {
+  min-height: 100vh;
+  background: #F9FAFC;
+  padding-top: 11vh; /* Account for fixed navbar */
+}
+
+.main-content {
+  min-height: calc(100vh - 11vh);
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hero Section */
+.booking-hero {
+  background: linear-gradient(135deg, #4E6EF2 0%, #8B5CF6 100%);
+  color: white;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  opacity: 0.95;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Booking Form Section */
+.booking-form-section {
+  padding: 4rem 0;
+  background: #F9FAFC;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booking-page {
+    padding-top: 12vh; /* More padding on mobile */
+  }
+  
+  .booking-hero {
+    padding: 3rem 0;
+  }
+  
+  .booking-form-section {
+    padding: 3rem 0;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-page {
+    padding-top: 13vh; /* Even more padding on small screens */
+  }
+  
+  .booking-hero {
+    padding: 2rem 0;
+  }
+  
+  .booking-form-section {
+    padding: 2rem 0;
+  }
+}

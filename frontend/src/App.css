@@ -1,15 +1,3 @@
-#root {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: clamp(1rem, 3vw, 2rem);
-  text-align: center;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .logo {
   height: clamp(4em, 8vw, 6em);
   padding: clamp(1em, 2vw, 1.5em);
@@ -102,25 +90,7 @@
 
 /* Mobile-specific styles */
 @media (max-width: 768px) {
-  #root {
-    padding: 1rem 0.5rem;
-  }
-  
   .card {
     padding: 1rem;
-  }
-}
-
-/* Tablet styles */
-@media (min-width: 769px) and (max-width: 1024px) {
-  #root {
-    padding: 1.5rem;
-  }
-}
-
-/* Desktop styles */
-@media (min-width: 1025px) {
-  #root {
-    padding: 2rem;
   }
 }

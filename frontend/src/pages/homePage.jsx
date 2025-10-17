@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/authPage.css';
+import '../styles/homePage.css';
+import { BASE_API_URL } from '../config/api.js';
+import apiClient from '../utils/apiClient.js';
+import { 
+  isRequestInProgress, 
+  markRequestInProgress, 
+  markRequestComplete, 
+  getCachedResponse, 
+  setCachedResponse 
+} from '../utils/requestTracker.js';
+import Navbar from '../components/Navbar.jsx';
+import Footer from '../components/Footer.jsx';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isLoadingProfileImage, setIsLoadingProfileImage] = useState(false);
+  const requestInProgress = useRef(false);
+  const hasAttemptedFetch = useRef(false);
 
-  const BASE_API_URL = 'http://localhost:3001/api';
 
   useEffect(() => {
     // Get user data from localStorage (set during signup)
@@ -17,8 +33,8 @@ const HomePage = () => {
       setUser(parsedUser);
       
       // Fetch profile image if user has one
-      if (parsedUser.profilePicture) {
-        fetchProfileImage(parsedUser.profilePicture);
+      if (parsedUser.profilePicture && !isLoadingProfileImage) {
+        fetchProfileImageWithUser(parsedUser, parsedUser.profilePicture);
       } else {
         setLoading(false);
       }
@@ -26,26 +42,71 @@ const HomePage = () => {
       setError('No user data found. Please sign up first.');
       setLoading(false);
     }
-  }, []);
+  }, [isLoadingProfileImage]);
 
-  const fetchProfileImage = async (s3FileName) => {
+  const fetchProfileImageWithUser = async (userData, s3FileName) => {
+    const userId = userData?._id || userData?.id;
+    const globalKey = `profile-image-${userId}-${s3FileName}`;
+    
+    // AGGRESSIVE: If we've already attempted to fetch this image, don't try again
+    if (hasAttemptedFetch.current) {
+      setLoading(false);
+      return;
+    }
+
+    // Check global tracker first - if request is already in progress, abort immediately
+    if (isRequestInProgress(globalKey)) {
+      setLoading(false);
+      return;
+    }
+
+    // Check if we already have this image or request is in progress locally
+    if (requestInProgress.current || profileImageUrl) {
+      setLoading(false);
+      return;
+    }
+
+    // Check cache first
+    const cacheKey = `${userId}-${s3FileName}`;
+    const cachedUrl = getCachedResponse(cacheKey);
+    if (cachedUrl) {
+      setProfileImageUrl(cachedUrl);
+      setLoading(false);
+      return;
+    }
+
+    // Mark as attempted and in progress globally and locally
+    hasAttemptedFetch.current = true;
+    markRequestInProgress(globalKey);
+    requestInProgress.current = true;
+    setIsLoadingProfileImage(true);
+    
     try {
       const response = await fetch(`${BASE_API_URL}/s3/get-image-from-s3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'user-id': userId || ''
         },
         body: JSON.stringify({ s3FileName }),
       });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setProfileImageUrl(data.data.imageUrl);
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.data?.imageUrl) {
+          // Cache the successful result
+          setCachedResponse(cacheKey, data.data.imageUrl);
+          setProfileImageUrl(data.data.imageUrl);
+        }
       }
     } catch (err) {
-      console.error('Error fetching profile image:', err);
+      // Silently handle errors to prevent security breaches
+      // No console logging of sensitive data
     } finally {
+      markRequestComplete(globalKey);
+      requestInProgress.current = false;
+      setIsLoadingProfileImage(false);
       setLoading(false);
     }
   };
@@ -55,9 +116,10 @@ const HomePage = () => {
     window.location.href = '/';
   };
 
-  const handleViewUsers = () => {
-    window.location.href = '/users';
+  const handleBookBondy = () => {
+    navigate('/booking');
   };
+
 
   if (loading) {
     return (
@@ -65,7 +127,7 @@ const HomePage = () => {
         <div className="auth-card">
           <div className="auth-header">
             <h1 className="auth-title">Loading...</h1>
-            <p className="auth-subtitle">Welcome to Gen-Link</p>
+            <p className="auth-subtitle">Welcome to Bondy</p>
           </div>
         </div>
       </div>
@@ -93,98 +155,146 @@ const HomePage = () => {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card home-card">
-        <div className="auth-header">
-          <h1 className="auth-title">Welcome to Gen-Link! 🎉</h1>
-          <p className="auth-subtitle">Your account has been created successfully</p>
-        </div>
-
-        <div className="home-content">
-          {/* Profile Image */}
-          <div className="profile-image-container">
-            {profileImageUrl ? (
-              <img
-                src={profileImageUrl}
-                alt="Profile"
-                className="profile-image"
-              />
-            ) : (
-              <div className="profile-placeholder">
-                👤
+    <div className="homepage">
+      <Navbar user={user} onLogout={handleLogout} />
+      
+      <main className="main-content">
+        {/* Hero Section */}
+        <section className="hero-section">
+          <div className="hero-container">
+            <div className="hero-content">
+              <h1 className="hero-title">
+                Find someone by your side.
+              </h1>
+              <p className="hero-subtitle">
+                Trusted, verified companions for care, errands, and meaningful connection—whenever you need a hand.
+              </p>
+              <div className="hero-ctas">
+                <button className="cta-primary" onClick={handleBookBondy}>
+                  Book a Bondy
+                </button>
               </div>
-            )}
+              <p className="trust-builder">
+                Every Bondy is background-checked and kindness-certified.
+              </p>
+            </div>
+            <div className="hero-visual">
+              <img src="../assets/homepageOldLady.png" alt="Young person helping elderly person" className="hero-image" />
+            </div>
           </div>
+        </section>
 
-          {/* Welcome Message */}
-          <div className="welcome-section">
-            <h2 className="welcome-title">
-              Hello, {user?.username}! 👋
+        {/* Bondy Promise Section */}
+        <section className="bondy-promise">
+          <div className="container">
+            <h2 className="promise-title">
+              Companionship Built on Kindness and Trust.
             </h2>
-            <p className="welcome-subtitle">
-              Welcome to the Gen-Link community!
-            </p>
-            
-            {/* User Details */}
-            <div className="user-details-card">
-              <h3 className="details-title">Your Account Details</h3>
-              <div className="details-grid">
-                <p className="detail-item">
-                  <strong>Username:</strong> {user?.username}
+            <div className="promise-pillars">
+              <div className="pillar">
+                <div className="pillar-icon trust-icon">
+                  🛡️
+                </div>
+                <h3 className="pillar-title">Verified for Peace of Mind</h3>
+                <p className="pillar-description">
+                  Every companion is rigorously vetted, insured, and background-checked so you can book with complete confidence.
                 </p>
-                <p className="detail-item">
-                  <strong>Contact:</strong> {user?.contactNumber}
+              </div>
+              <div className="pillar">
+                <div className="pillar-icon connection-icon">
+                  💙
+                </div>
+                <h3 className="pillar-title">Genuine Human Connection</h3>
+                <p className="pillar-description">
+                  We match you with companions who are naturally empathetic. It's more than assistance—it's about building a friendly, reliable relationship.
                 </p>
-                <p className="detail-item">
-                  <strong>ID Type:</strong> {user?.governmentIdType}
-                </p>
-                <p className="detail-item">
-                  <strong>Verification:</strong> {user?.idVerificationMethod === 'number' ? 'ID Number' : 'ID Image'}
-                </p>
-                {user?.idVerificationMethod === 'number' && user?.governmentId && (
-                  <p className="detail-item">
-                    <strong>ID Number:</strong> {user.governmentId}
-                  </p>
-                )}
-                <p className="detail-item detail-small">
-                  <strong>Joined:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Today'}
+              </div>
+              <div className="pillar">
+                <div className="pillar-icon booking-icon">
+                  📅
+                </div>
+                <h3 className="pillar-title">Flexible & Simple Management</h3>
+                <p className="pillar-description">
+                  Manage all your appointments, track your companion's arrival status, and adjust schedules easily through our intuitive online portal.
                 </p>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Action Buttons */}
-          <div className="action-buttons">
-            <button 
-              onClick={handleViewUsers}
-              className="submit-button action-btn action-btn-success"
-            >
-              👥 View All Users
-            </button>
-            
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="submit-button action-btn action-btn-info"
-            >
-              ➕ Add Another User
-            </button>
-            
-            <button 
-              onClick={handleLogout}
-              className="submit-button action-btn action-btn-danger"
-            >
-              🚪 Logout
-            </button>
+        {/* Services Overview Section */}
+        <section className="services-overview">
+          <div className="container">
+            <div className="services-header">
+              <h2 className="services-title">A hand for every need.</h2>
+              <p className="services-subtitle">
+                Explore the ways our verified companions can help lighten your load and brighten your day.
+              </p>
+            </div>
+            <div className="services-grid">
+              <div className="service-card">
+                <div className="service-icon elderly-icon">
+                  👴
+                </div>
+                <h3 className="service-title">Elderly Companionship</h3>
+                <p className="service-description">
+                  Warm, non-medical care for social visits, reading, or quiet time at home.
+                </p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon shopping-icon">
+                  🛒
+                </div>
+                <h3 className="service-title">Errands & Groceries</h3>
+                <p className="service-description">
+                  Reliable assistance with grocery runs, prescription pickups, and light household tasks.
+                </p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon medical-icon">
+                  🏥
+                </div>
+                <h3 className="service-title">Medical Appointments</h3>
+                <p className="service-description">
+                  Safe transportation and a supportive presence for doctor visits and therapies.
+                </p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon tech-icon">
+                  💻
+                </div>
+                <h3 className="service-title">Technology Help</h3>
+                <p className="service-description">
+                  Patient assistance with smartphones, computers, video calls, and setting up new devices.
+                </p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon social-icon">
+                  ☕
+                </div>
+                <h3 className="service-title">Social Outings</h3>
+                <p className="service-description">
+                  A friendly partner for walks, museum visits, dining out, or other local activities.
+                </p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon admin-icon">
+                  📋
+                </div>
+                <h3 className="service-title">Administrative Tasks</h3>
+                <p className="service-description">
+                  Help with simple paperwork, organizing mail, and scheduling reminders.
+                </p>
+              </div>
+            </div>
+            <div className="services-cta">
+              <button className="cta-link" onClick={handleBookBondy}>Book a Bondy →</button>
+            </div>
           </div>
-        </div>
+        </section>
+      </main>
 
-        {/* Success Message */}
-        <div className="success-message">
-          <p className="success-text">
-            ✅ Your account is now active and ready to use!
-          </p>
-        </div>
-      </div>
+      <Footer />
     </div>
   );
 };

@@ -1,494 +1,577 @@
-import React, { useState, useEffect } from 'react'
-import '../styles/authPage.css'
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  Upload,
+  Camera
+} from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+import { z } from 'zod';
+import { getApiEndpoint } from '../config/api.js';
 import axios from 'axios';
+import '../styles/AuthPage.css';
 
 const AuthPage = () => {
+  const [isLogin, setIsLogin] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
   const [formData, setFormData] = useState({
     username: '',
-    contactNumber: '',
     password: '',
-    governmentId: '',
-    governmentIdType: 'Aadhaar',
+    contactNumber: '',
     profilePicture: null,
-    idVerificationMethod: 'number', // 'number' or 'image'
-    idImage: null,
+    profilePictureFile: null,
+  });
+  const [errors, setErrors] = useState({});
+  const [placeholderErrors, setPlaceholderErrors] = useState({});
+
+  // Function to show error in placeholder for 2 seconds
+  const showPlaceholderError = (fieldName, errorMessage) => {
+    setPlaceholderErrors(prev => ({
+      ...prev,
+      [fieldName]: errorMessage
+    }));
+    
+    setTimeout(() => {
+      setPlaceholderErrors(prev => ({
+        ...prev,
+        [fieldName]: ''
+      }));
+    }, 2000);
+  };
+
+  // Validation schemas
+  const loginSchema = z.object({
+    contactNumber: z.string().min(10, 'Please enter a valid 10-digit phone number').max(15, 'Phone number is too long'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
   });
 
-  const [profilePictureName, setProfilePictureName] = useState(null);
-  const [idImageName, setIdImageName] = useState(null);
+  const signupSchema = z.object({
+    username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username must be less than 20 characters'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    contactNumber: z.string().min(10, 'Please enter a valid 10-digit phone number').max(15, 'Phone number is too long'),
+  });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [validationError, setValidationError] = useState('');
+  const steps = [
+    { id: 1, title: isLogin ? 'Login' : 'Account Details', description: isLogin ? 'Enter your credentials' : 'Basic information' },
+    { id: 2, title: 'Profile Picture', description: 'Add your photo' },
+    { id: 3, title: 'Complete', description: 'Review and finish' },
+  ];
 
-  // Check if user is already logged in
-  useEffect(() => {
-    const currentUser = localStorage.getItem('currentUser');
-    if (currentUser) {
-      // User is already logged in, redirect to homepage
-      window.location.href = '/home';
+  const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
+    
+    if (files && files[0]) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: files[0],
+        [`${name}File`]: files[0]
+      }));
+    } else {
+      // For contact number, only allow digits
+      if (name === 'contactNumber') {
+        const digitsOnly = value.replace(/\D/g, '');
+        setFormData(prev => ({
+          ...prev,
+          [name]: digitsOnly
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
     }
-  }, []);
 
-    const handleChange = (e) => {
-        const { name, value, files } = e.target;
-        if (name === 'profilePicture' || name === 'idImage') {
-            setFormData({ ...formData, [name]: files[0] });
-        } else {
-            setFormData({ ...formData, [name]: value });
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+
+  const validateStep = (step) => {
+    const newErrors = {};
+    
+    if (step === 1) {
+      if (isLogin) {
+        if (!formData.contactNumber) {
+          newErrors.contactNumber = 'Contact number is required';
+          showPlaceholderError('contactNumber', 'Contact number is required');
         }
-    };
+        if (!formData.password) {
+          newErrors.password = 'Password is required';
+          showPlaceholderError('password', 'Password is required');
+        }
+      } else {
+        if (!formData.username) {
+          newErrors.username = 'Username is required';
+          showPlaceholderError('username', 'Username is required');
+        }
+        if (!formData.password) {
+          newErrors.password = 'Password is required';
+          showPlaceholderError('password', 'Password is required');
+        }
+        if (!formData.contactNumber) {
+          newErrors.contactNumber = 'Contact number is required';
+          showPlaceholderError('contactNumber', 'Contact number is required');
+        }
+      }
+    }
+    
+    // Step 2 (Profile Picture) is optional - no validation needed
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    const handleVerificationMethodChange = (method) => {
-        setFormData({
-            ...formData,
-            idVerificationMethod: method,
-            governmentId: method === 'image' ? '' : formData.governmentId,
-            idImage: method === 'number' ? null : formData.idImage
-        });
-    };
+  const nextStep = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+    }
+  };
 
-  // Validation function that runs before any file uploads
-  const validateFormData = () => {
-    console.log('Starting form validation...', formData);
-    setValidationError(''); // Clear any previous errors
-    
-    // Username validation
-    if (!formData.username || formData.username.length < 3 || formData.username.length > 20) {
-      const errorMsg = 'Username must be between 3 and 20 characters';
-      setValidationError(errorMsg);
-      alert(errorMsg);
-      return false;
-    }
-    
-    // Contact number validation
-    if (!formData.contactNumber || formData.contactNumber.length !== 10 || !/^\d{10}$/.test(formData.contactNumber)) {
-      const errorMsg = 'Contact number must be exactly 10 digits';
-      setValidationError(errorMsg);
-      alert(errorMsg);
-      return false;
-    }
-    
-    // Password validation
-    if (!formData.password || formData.password.length < 8 || formData.password.length > 50) {
-      const errorMsg = 'Password must be between 8 and 50 characters';
-      setValidationError(errorMsg);
-      alert(errorMsg);
-      return false;
-    }
-    
-    // Government ID validation based on verification method
-    if (formData.idVerificationMethod === 'number') {
-      if (!formData.governmentId || formData.governmentId.length < 10 || formData.governmentId.length > 20) {
-        const errorMsg = 'Please enter a valid government ID number (10-20 characters)';
-        setValidationError(errorMsg);
-        alert(errorMsg);
-        return false;
-      }
-      
-      if (!/^[A-Za-z0-9]+$/.test(formData.governmentId)) {
-        const errorMsg = 'Government ID number can only contain letters and numbers';
-        setValidationError(errorMsg);
-        alert(errorMsg);
-        return false;
-      }
-    } else if (formData.idVerificationMethod === 'image') {
-      if (!formData.idImage) {
-        const errorMsg = 'Please upload your ID image';
-        setValidationError(errorMsg);
-        alert(errorMsg);
-        return false;
-      }
-    }
-    
-    console.log('Form validation passed!');
-    return true;
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Only submit if it's the final step or login
+    if (!isLogin && currentStep < steps.length) {
+      return;
+    }
+    
+    // Additional validation before submission
+    if (!isLogin) {
+      if (!formData.profilePictureFile) {
+        toast.error('Please upload a profile picture');
+        return;
+      }
+    }
+    
     setIsLoading(true);
     
+    // Test backend connection first
     try {
-      // Run all validation BEFORE any file uploads
-      if (!validateFormData()) {
-        console.log('Form validation failed, stopping process');
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('All validations passed, proceeding with file uploads...');
-
-      let profilePictureUrl = null;
-      let idImageUrl = null;
-
-      if(formData.profilePicture) {
-        console.log('✅ VALIDATION PASSED - Getting pre-signed URL for profile picture...');
-        try {
-          profilePictureUrl = await axios.post('http://localhost:3001/api/s3/get-pre-signed-url', {
-            key: formData.profilePicture.name,
-            contentType: formData.profilePicture.type,
-          });
-          console.log('Profile picture pre-signed URL received:', profilePictureUrl.data);
-        } catch (error) {
-          console.error('Failed to get profile picture pre-signed URL:', error);
-          throw error;
-        }
-      }
-
-      if(formData.idVerificationMethod === 'image' && formData.idImage) {
-        console.log('✅ VALIDATION PASSED - Getting pre-signed URL for ID image...');
-        try {
-          idImageUrl = await axios.post('http://localhost:3001/api/s3/get-pre-signed-url', {
-            key: formData.idImage.name,
-            contentType: formData.idImage.type,
-          });
-          console.log('ID image pre-signed URL received:', idImageUrl.data);
-        } catch (error) {
-          console.error('Failed to get ID image pre-signed URL:', error);
-          throw error;
-        }
-      }
-
-      // Upload profile picture to S3
-      if (profilePictureUrl) {
-        console.log('Uploading profile picture to S3...');
-        console.log('Pre-signed URL:', profilePictureUrl.data);
-        console.log('File to upload:', formData.profilePicture);
-        try {
-          const response = await axios.put(profilePictureUrl.data.data.uploadUrl, formData.profilePicture, {
-            headers: {
-              'Content-Type': formData.profilePicture.type,
-            },
-            maxRedirects: 0,
-            validateStatus: function (status) {
-              return status >= 200 && status < 300; // Accept only 2xx status codes
-            }
-          });
-          
-          console.log('S3 upload response status:', response.status);
-          console.log('S3 upload response headers:', response.headers);
-          console.log('Profile picture uploaded successfully to S3!');
-        } catch (error) {
-          console.error('Profile picture upload failed:', error);
-          if (error.response) {
-            console.error('Response status:', error.response.status);
-            console.error('Response data:', error.response.data);
-            console.error('Response headers:', error.response.headers);
-          }
-          throw error;
-        }
-      }
-
-      // Upload ID image to S3
-      if (idImageUrl) {
-        console.log('Uploading ID image to S3...');
-        try {
-          const response = await axios.put(idImageUrl.data.data.uploadUrl, formData.idImage, {
-            headers: {
-              'Content-Type': formData.idImage.type,
-            },
-            maxRedirects: 0,
-            validateStatus: function (status) {
-              return status >= 200 && status < 300; // Accept only 2xx status codes
-            }
-          });
-          
-          console.log('S3 upload response status:', response.status);
-          console.log('S3 upload response headers:', response.headers);
-          console.log('ID image uploaded successfully to S3!');
-        } catch (error) {
-          console.error('ID image upload failed:', error);
-          if (error.response) {
-            console.error('Response status:', error.response.status);
-            console.error('Response data:', error.response.data);
-            console.error('Response headers:', error.response.headers);
-          }
-          throw error;
-        }
-      }
-
-
-      setProfilePictureName(profilePictureUrl?.data?.data?.originalFileName || null);
-      setIdImageName(idImageUrl?.data?.data?.originalFileName || null);
-
-      console.log('Form submitted:', formData);
-      
-      // Prepare data based on verification method (AFTER S3 uploads)
-      const profilePictureS3Name = profilePictureUrl?.data?.data?.s3FileName || null;
-      const profilePictureOriginalName = profilePictureUrl?.data?.data?.originalFileName || null;
-      const idImageS3Name = idImageUrl?.data?.data?.s3FileName || null;
-      const idImageOriginalName = idImageUrl?.data?.data?.originalFileName || null;
-      
-      console.log('profilePictureS3Name:', profilePictureS3Name);
-      console.log('profilePictureOriginalName:', profilePictureOriginalName);
-      console.log('idImageS3Name:', idImageS3Name);
-      console.log('idImageOriginalName:', idImageOriginalName);
-      
-      // Build signup data with all fields
-            const signupData = {
-                username: formData.username,
-                contactNumber: formData.contactNumber,
-                password: formData.password,
-                governmentIdType: formData.governmentIdType,
-                idVerificationMethod: formData.idVerificationMethod,
-        profilePicture: profilePictureS3Name,
-        profilePictureOriginalName: profilePictureOriginalName,
-                governmentId: formData.idVerificationMethod === 'number' ? formData.governmentId : null,
-        idImage: formData.idVerificationMethod === 'image' ? idImageS3Name : null,
-        idImageOriginalName: formData.idVerificationMethod === 'image' ? idImageOriginalName : null,
-            };
-
-            console.log('Final signup data being sent:', signupData);
-      console.log('Profile picture S3 name:', profilePictureS3Name);
-      console.log('Profile picture original name:', profilePictureOriginalName);
-      console.log('ID image S3 name:', idImageS3Name);
-      console.log('ID image original name:', idImageOriginalName);
-      
-      // Call signup API
-      const signupResponse = await axios.post('http://localhost:3001/api/auth/signup', signupData);
-      
-      // Store user data in localStorage for homepage
-      if (signupResponse.data.success) {
-        const userData = {
-          ...signupResponse.data.data,
-          profilePicture: profilePictureS3Name,
-          profilePictureOriginalName: profilePictureOriginalName,
-          idImage: idImageS3Name,
-          idImageOriginalName: idImageOriginalName,
+      setLoadingStep('Connecting to server...');
+      const response = await axios.get('http://localhost:3001/', { timeout: 5000 });
+    } catch (error) {
+      console.error('Backend connection failed:', error);
+      console.error('Error URL:', error.config?.url);
+      toast.error('Cannot connect to server. Please ensure the backend is running.');
+      setIsLoading(false);
+      setLoadingStep('');
+      return;
+    }
+    
+    try {
+      if (isLogin) {
+        // Login logic
+        const loginData = {
+          contactNumber: formData.contactNumber,
+          password: formData.password
         };
-        localStorage.setItem('currentUser', JSON.stringify(userData));
+
+        console.log('Login data being sent:', loginData);
+        console.log('Contact number length:', formData.contactNumber?.length);
         
-        // Reset form after successful submission
-        setFormData({
-          username: '',
-          contactNumber: '',
-          password: '',
-          governmentId: '',
-          governmentIdType: 'Aadhaar',
-          profilePicture: null,
-          idVerificationMethod: 'number',
-          idImage: null,
+        setLoadingStep('Signing you in...');
+        const validatedData = loginSchema.parse(loginData);
+        console.log('Validated login data:', validatedData);
+        const response = await axios.post(getApiEndpoint('/auth/login'), validatedData);
+        
+        if (response.data.success) {
+          localStorage.setItem('currentUser', JSON.stringify(response.data.data));
+          toast.success('Login successful!');
+          window.location.href = '/home';
+        }
+      } else {
+        // Signup logic
+        const validatedData = signupSchema.parse(formData);
+        
+        // Handle file uploads
+      let profilePictureUrl = null;
+
+        if (formData.profilePictureFile) {
+          try {
+            setLoadingStep('Uploading profile picture...');
+            const uploadUrl = getApiEndpoint('/s3/get-pre-signed-url');
+            const profileResponse = await axios.post(uploadUrl, {
+              fileName: formData.profilePictureFile.name,
+              fileType: formData.profilePictureFile.type,
+              folder: 'profiles'
+            }, {
+              timeout: 10000, // 10 second timeout
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            // Upload the actual file to S3 using the pre-signed URL
+            const uploadResponse = await axios.put(profileResponse.data.data.uploadUrl, formData.profilePictureFile, {
+              headers: {
+                'Content-Type': formData.profilePictureFile.type
+              }
+            });
+            
+            // Get the S3 file name for storage
+            const s3FileName = profileResponse.data.data.s3FileName;
+            profilePictureUrl = s3FileName;
+          } catch (error) {
+            console.error('Profile picture upload error:', error);
+            console.error('Upload URL was:', error.config?.url);
+            if (error.code === 'ERR_NETWORK') {
+              throw new Error('Cannot connect to server. Please check if the backend is running.');
+            }
+            throw new Error('Failed to upload profile picture');
+          }
+        }
+
+
+            const signupData = {
+          ...validatedData,
+          profilePicture: profilePictureUrl || null,
+          profilePictureOriginalName: formData.profilePictureFile?.name || null,
+        };
+
+        // Clean up undefined values
+        Object.keys(signupData).forEach(key => {
+          if (signupData[key] === undefined) {
+            delete signupData[key];
+          }
         });
 
-        // Redirect to homepage
-        window.location.href = '/home';
-        return;
+        setLoadingStep('Creating your account...');
+
+        const response = await axios.post(getApiEndpoint('/auth/signup'), signupData);
+        
+        if (response.data.success) {
+          localStorage.setItem('currentUser', JSON.stringify(response.data.data));
+          toast.success('Account created successfully!');
+          window.location.href = '/home';
+        }
       }
         } catch (error) {
-            console.error('Registration error:', error);
+      console.error('Auth error:', error);
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
-
-            let errorMessage = 'Registration failed. Please try again.';
-            
-            if (error.response?.data?.message) {
-                if (error.response.data.message.includes('already exists')) {
-          errorMessage = `User with this ${error.response.data.data?.field || 'information'} already exists. Please use different details.`;
-        } else if (error.response.data.message.includes('Validation error')) {
-          errorMessage = 'Please check your information and try again.';
-                } else {
-                    errorMessage = error.response.data.message;
-                }
-            }
-            
-      alert(errorMessage);
+      
+      // Clear any existing toasts first
+      toast.dismiss();
+      
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        const errorMessages = error.errors.map(err => err.message).join(', ');
+        toast.error(errorMessages);
+      } else {
+        toast.error(`Request failed: ${error.response?.status || 'Unknown error'}`);
+      }
         } finally {
             setIsLoading(false);
+            setLoadingStep('');
         }
     };
 
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setCurrentStep(1);
+    setFormData({
+      username: '',
+      password: '',
+      contactNumber: '',
+      profilePicture: null,
+      profilePictureFile: null,
+    });
+    setErrors({});
+  };
+
   return (
+    <div className="auth-page">
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+      
+      {/* Background */}
+      <div className="auth-background">
+        <div className="auth-background-gradient" />
+        <div className="auth-background-pattern" />
+      </div>
+
+      {/* Main Content */}
     <div className="auth-container">
-      <div className="auth-card">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="auth-card"
+        >
+          {/* Header */}
         <div className="auth-header">
-          <h1 className="auth-title">Create Account</h1>
-          <p className="auth-subtitle">Join Gen-Link and start your journey</p>
-          {validationError && (
-            <div style={{ 
-              backgroundColor: '#fee', 
-              color: '#c33', 
-              padding: '10px', 
-              borderRadius: '5px', 
-              marginTop: '10px',
-              border: '1px solid #fcc'
-            }}>
-              ⚠️ {validationError}
+            <div className="auth-logo">
+              <img src="/assets/logo.png" alt="Bondy Logo" className="logo-image" />
             </div>
-          )}
-          <div style={{ marginTop: '15px' }}>
-            <a 
-              href="/users" 
-              style={{ 
-                color: '#667eea', 
-                textDecoration: 'none',
-                fontSize: '0.9em',
-                fontWeight: '500'
-              }}
-            >
-              👥 View All Registered Users
-            </a>
+            <h1 className="auth-title">
+              {isLogin ? 'Welcome Back' : 'Join Our Community'}
+            </h1>
+            <p className="auth-subtitle">
+              {isLogin 
+                ? 'Sign in to continue your journey with us'
+                : 'Create your account and start connecting with trusted companions'
+              }
+            </p>
+              {/* Progress Steps (Signup only) */}
+              {!isLogin && (
+        <motion.div 
+          className="auth-steps"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <div className="step-counter">
+            {currentStep}/{steps.length}
           </div>
-        </div>
-        
-        <form onSubmit={handleSubmit} className={`auth-form ${isLoading ? 'loading' : ''}`}>
-          <div className="form-group">
-            <label htmlFor="username" className="form-label">Username</label>
-                            <input
-                                type="text"
-                                id="username"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-              className="form-input"
-              placeholder="Enter your username"
-              minLength="3"
-              maxLength="20"
-                                required
-                            />
-                        </div>
+        </motion.div>
+              )}
+          </div>
 
-          <div className="form-group">
-            <label htmlFor="contactNumber" className="form-label">Contact Number</label>
-                            <input
-                                type="tel"
-                                id="contactNumber"
-                                name="contactNumber"
-                                value={formData.contactNumber}
-                                onChange={handleChange}
-              className="form-input"
-              placeholder="Enter your phone number"
-              maxLength="10"
-              pattern="[0-9]{10}"
-                                required
-                            />
-                    </div>
 
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-              className="form-input"
-                            placeholder="Create a strong password"
-              minLength="8"
-              maxLength="50"
-                            required
-                        />
-                    </div>
-
-          <div className="form-group">
-            <label htmlFor="governmentIdType" className="form-label">ID Type</label>
-                        <select
-                            id="governmentIdType"
-                            name="governmentIdType"
-                            value={formData.governmentIdType}
-                            onChange={handleChange}
-              className="form-select"
-                            required
-                        >
-                            <option value="Aadhaar">Aadhaar Card</option>
-                            <option value="PAN">PAN Card</option>
-                            <option value="Voter ID">Voter ID</option>
-                            <option value="Driving License">Driving License</option>
-                        </select>
-                    </div>
-
-          <div className="form-group">
-            <label className="form-label">ID Verification Method</label>
-            <div className="verification-method-container">
-              <label className="verification-option">
-                <input
-                  type="radio"
-                  name="idVerificationMethod"
-                  value="number"
-                  checked={formData.idVerificationMethod === 'number'}
-                  onChange={() => handleVerificationMethodChange('number')}
-                />
-                <span className="verification-label">Enter ID Number</span>
-              </label>
-              <label className="verification-option">
-                <input
-                  type="radio"
-                  name="idVerificationMethod"
-                  value="image"
-                  checked={formData.idVerificationMethod === 'image'}
-                  onChange={() => handleVerificationMethodChange('image')}
-                />
-                <span className="verification-label">Upload ID Image</span>
-              </label>
-                        </div>
-                    </div>
-
-                    {formData.idVerificationMethod === 'number' ? (
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-content">
+            {/* Step 1: Account Details */}
+            {currentStep === 1 && (
+              <div className="form-step">
+          {isLogin ? (
             <div className="form-group">
-              <label htmlFor="governmentId" className="form-label">Government ID Number</label>
-                            <input
-                                type="text"
-                                id="governmentId"
-                                name="governmentId"
-                                value={formData.governmentId}
-                                onChange={handleChange}
-                className="form-input"
-                placeholder="Enter your ID number"
-                minLength="10"
-                maxLength="20"
-                                required
-                            />
-                        </div>
-                    ) : (
-            <div className="form-group">
-              <label htmlFor="idImage" className="form-label">Upload ID Image</label>
-              <div className="file-input-wrapper">
+              <div className="input-group">
+                <Phone className="input-icon" />
                 <input
-                  type="file"
-                  id="idImage"
-                            name="idImage"
-                  onChange={handleChange}
-                  className="file-input"
-                            accept="image/*"
-                  required
+                  type="tel"
+                  name="contactNumber"
+                  value={formData.contactNumber}
+                  onChange={handleInputChange}
+                  className={`input ${errors.contactNumber ? 'input-error' : ''}`}
+                  placeholder={placeholderErrors.contactNumber || "Enter your contact number"}
                 />
-                <label htmlFor="idImage" className="file-input-label">
-                  <span className="file-input-icon">🆔</span>
-                  {formData.idImage ? formData.idImage.name : 'Choose ID image'}
-                </label>
               </div>
-              <p className="file-help-text">Upload a clear image of your {formData.governmentIdType.toLowerCase()}</p>
+            </div>
+          ) : (
+            <div className="form-group">
+              <div className="input-group">
+                <User className="input-icon" />
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className={`input ${errors.username ? 'input-error' : ''}`}
+                  placeholder={placeholderErrors.username || "Enter your username"}
+                />
+              </div>
             </div>
           )}
 
           <div className="form-group">
-            <label htmlFor="profilePicture" className="form-label">Profile Picture</label>
-            <div className="file-input-wrapper">
+                    <div className="input-group">
+                      <Lock className="input-icon" />
+                            <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`input ${errors.password ? 'input-error' : ''}`}
+                        placeholder={placeholderErrors.password || "Enter your password"}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    </div>
+
+                  {!isLogin && (
+          <div className="form-group">
+                      <div className="input-group">
+                        <Phone className="input-icon" />
+                        <input
+                          type="tel"
+                          name="contactNumber"
+                          value={formData.contactNumber}
+                          onChange={handleInputChange}
+                          className={`input ${errors.contactNumber ? 'input-error' : ''}`}
+                          placeholder={placeholderErrors.contactNumber || "Enter your 10-digit phone number"}
+                        />
+                      </div>
+                    </div>
+                  )}
+              </div>
+            )}
+
+
+            {/* Step 2: Profile Picture (Signup only) */}
+            {!isLogin && currentStep === 2 && (
+              <div className="form-step">
+                  <div className="profile-picture-header">
+                    <h3><Camera className="profile-icon" /> Add Your Photo (Optional)</h3>
+                    <p>Help others recognize you by adding a clear profile picture</p>
+                  </div>
+
+                  <div className="profile-picture-upload">
               <input
                 type="file"
-                id="profilePicture"
                         name="profilePicture"
-                onChange={handleChange}
+                      onChange={handleInputChange}
+                      accept="image/*"
+                      id="profile-upload"
                 className="file-input"
-                        accept="image/*"
-              />
-              <label htmlFor="profilePicture" className="file-input-label">
-                <span className="file-input-icon">📷</span>
-                {formData.profilePicture ? formData.profilePicture.name : 'Choose profile picture'}
+                    />
+                    <label htmlFor="profile-upload" className="upload-area">
+                      {formData.profilePictureFile ? (
+                        <div className="uploaded-image">
+                          <img
+                            src={URL.createObjectURL(formData.profilePictureFile)}
+                            alt="Profile preview"
+                            className="preview-image"
+                          />
+                          <div className="upload-overlay">
+                            <Upload size={24} />
+                            <span>Change Photo</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="upload-placeholder">
+                          <Upload size={48} />
+                          <span>Click to upload photo</span>
+                          <p>JPG, PNG up to 5MB</p>
+                        </div>
+                      )}
               </label>
             </div>
+              </div>
+            )}
+
+            {/* Step 3: Complete (Signup only) */}
+            {!isLogin && currentStep === 3 && (
+              <div className="form-step">
+                  <div className="completion-header">
+                    <h3><CheckCircle className="completion-icon" /> Review Your Information</h3>
+                    <p>Please review your details before creating your account</p>
           </div>
 
-                    <button 
-                        type="submit" 
-            className="submit-button"
-                        disabled={isLoading}
-                    >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-                    </button>
-                </form>
+                  <div className="review-section">
+                    <div className="review-item">
+                      <span className="review-label">Username:</span>
+                      <span className="review-value">{formData.username}</span>
+                    </div>
+                    <div className="review-item">
+                      <span className="review-label">Contact:</span>
+                      <span className="review-value">{formData.contactNumber}</span>
+                    </div>
+                    {formData.profilePictureFile && (
+                      <div className="review-item">
+                        <span className="review-label">Profile Picture:</span>
+                        <span className="review-value">✓ Uploaded</span>
+                      </div>
+                    )}
+                  </div>
+              </div>
+            )}
+            </div>
+            
+            {/* Form Actions - Fixed at bottom */}
+            <div className="form-actions">
+              {!isLogin && currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={isLoading}
+                  className="btn btn-outline"
+                >
+                  <ArrowLeft size={20} />
+                  Previous
+                </button>
+              )}
+
+              {!isLogin && currentStep < steps.length ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={isLoading}
+                  className="btn btn-primary"
+                >
+                  Next
+                  <ArrowRight size={20} />
+                </button>
+              ) : (
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="btn btn-primary"
+                >
+                  {isLoading ? (
+                    <div className="loading-container">
+                      <div className="loading-spinner" />
+                      <span className="loading-text">{loadingStep}</span>
+                    </div>
+                  ) : (
+                    <>
+                      {isLogin ? 'Sign In' : 'Create Account'}
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Auth Toggle */}
+          <div className="auth-toggle">
+            <p>
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
+            <button
+              type="button"
+              onClick={toggleAuthMode}
+              className="toggle-link"
+            >
+              {isLogin ? 'Sign Up' : 'Sign In'}
+            </button>
+            </p>
+          </div>
+        </motion.div>
             </div>
         </div>
-  )
-}
+  );
+};
 
-export default AuthPage
+export default AuthPage;

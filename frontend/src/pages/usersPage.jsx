@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/authPage.css';
+import { BASE_API_URL } from '../config/api.js';
+import apiClient from '../utils/apiClient.js';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -7,7 +9,6 @@ const UsersPage = () => {
   const [error, setError] = useState('');
   const [imageUrls, setImageUrls] = useState({});
 
-  const BASE_API_URL = 'http://localhost:3001/api';
 
   useEffect(() => {
     fetchUsers();
@@ -16,8 +17,8 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BASE_API_URL}/auth/users`);
-      const data = await response.json();
+      const response = await apiClient.get(`${BASE_API_URL}/auth/users`);
+      const data = response.data;
       
       if (data.success) {
         setUsers(data.data);
@@ -193,6 +194,12 @@ const UsersPage = () => {
             className="submit-button action-btn action-btn-primary"
           >
             Back to Registration
+          </button>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="submit-button action-btn action-btn-info"
+          >
+            Login
           </button>
           <button 
             onClick={() => window.location.href = '/home'}
