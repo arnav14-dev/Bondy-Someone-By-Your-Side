@@ -9,8 +9,10 @@ import BookingPage from './pages/bookingPage.jsx';
 import BookingsPage from './pages/bookingsPage.jsx';
 import ProfilePage from './pages/profilePage.jsx';
 import AboutPage from './pages/aboutPage.jsx';
+import LocationManagementPage from './pages/locationManagementPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import './App.css'
+import ContactPage from "./pages/contactPage.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -25,7 +27,6 @@ function App() {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        console.log('Loaded user from localStorage:', parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
@@ -37,13 +38,11 @@ function App() {
   useEffect(() => {
     const isLoggedIn = user && user._id;
     if (isLoggedIn && location.pathname === '/') {
-      console.log('User is logged in, redirecting to /home');
       navigate('/home', { replace: true });
     }
   }, [user, location.pathname, navigate]);
 
   const handleLogout = () => {
-    console.log("User logged out");
     localStorage.removeItem('currentUser');
     setUser(null);
     navigate('/', { replace: true });
@@ -96,7 +95,7 @@ function App() {
       {isLoggedIn && <Navbar user={user} onLogout={handleLogout} onNavigate={handleNavigation} />}
       <Routes>
         <Route path='/' element={<AuthPage />} />
-        <Route path='/login' element={<LoginPage />} />
+        <Route path='/login' element={<AuthPage />} />
         <Route path='/home' element={
           <ProtectedRoute>
             <HomePage />
@@ -117,24 +116,16 @@ function App() {
             <ProfilePage />
           </ProtectedRoute>
         } />
-        <Route path='/services' element={
-          <div style={{ marginTop: isLoggedIn ? "80px" : "0", padding: "2rem" }}>
-            <h1>Services</h1>
-            <p>Our services page is coming soon!</p>
-          </div>
+        <Route path='/manage-locations' element={
+          <ProtectedRoute>
+            <LocationManagementPage />
+          </ProtectedRoute>
         } />
         <Route path='/about' element={<AboutPage />} />
-        <Route path='/become' element={
-          <div style={{ marginTop: isLoggedIn ? "80px" : "0", padding: "2rem" }}>
-            <h1>Become a Bondy</h1>
-            <p>Join our community as a companion!</p>
-          </div>
-        } />
         <Route path='/contact' element={
-          <div style={{ marginTop: isLoggedIn ? "80px" : "0", padding: "2rem" }}>
-            <h1>Contact Us</h1>
-            <p>Get in touch with our team.</p>
-          </div>
+          <ProtectedRoute>
+            <ContactPage />
+          </ProtectedRoute>
         } />
         {/* Fallback route */}
         <Route path='*' element={

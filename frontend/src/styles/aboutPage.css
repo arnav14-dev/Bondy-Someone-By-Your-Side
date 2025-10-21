@@ -6,20 +6,29 @@
   min-height: 100vh;
   background: #F9FAFC;
   padding-top: 11vh; /* Account for fixed navbar */
+  width: 100%;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
 
 /* Hero Section */
 .about-hero {
-  background: linear-gradient(135deg, #4E6EF2 0%, #8B5CF6 100%);
   color: white;
-  padding: 4rem 0;
-  text-align: center;
+  padding: 0;
+}
+.about-container {
+  max-width: 95%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hero-title {
@@ -34,22 +43,24 @@
   font-family: 'Inter', sans-serif;
   font-size: 1.25rem;
   font-weight: 400;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
   line-height: 1.6;
   opacity: 0.95;
+  text-align: center;
 }
 
 /* Mission Section */
 .mission-section {
-  padding: 5rem 0;
+  padding: 1rem 0;
   background: white;
 }
 
 .mission-content {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
   text-align: center;
+  padding: 0 2rem;
 }
 
 .section-title {
@@ -229,7 +240,7 @@
 /* CTA Section */
 .cta-section {
   padding: 5rem 0;
-  background: linear-gradient(135deg, #4E6EF2 0%, #8B5CF6 100%);
+  background: rgb(246, 246, 244);
   color: white;
   text-align: center;
 }
@@ -296,18 +307,31 @@
   transform: translateY(-2px);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Mobile-First Responsive Design */
+
+/* Base mobile styles (up to 480px) */
+@media (max-width: 480px) {
   .about-page {
-    padding-top: 12vh; /* More padding on mobile */
+    padding-top: 80px;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .container {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
   
   .about-hero {
-    padding: 3rem 0;
+    padding: 0;
+  }
+  
+  .hero-title {
+    font-size: clamp(1.8rem, 8vw, 2.2rem);
+    margin-bottom: 1rem;
+  }
+  
+  .hero-subtitle {
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+    padding: 0 0.5rem;
   }
   
   .mission-section,
@@ -316,51 +340,465 @@
   .services-overview,
   .team-section,
   .cta-section {
-    padding: 3rem 0;
+    padding: 1.5rem 0;
+  }
+  
+  .section-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    margin-bottom: 1.5rem;
+  }
+  
+  .mission-text {
+    font-size: 1rem;
+    line-height: 1.7;
   }
   
   .values-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .value-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .value-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .value-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .value-description {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  .story-text {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+  
+  .story-text p {
+    margin-bottom: 1.25rem;
   }
   
   .services-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .service-item {
+    padding: 1.5rem 1rem;
+  }
+  
+  .service-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .service-item h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .service-item p {
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
   
   .commitment-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .commitment-item {
+    padding: 1.25rem;
+  }
+  
+  .commitment-item h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .commitment-item p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  .cta-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    margin-bottom: 0.75rem;
+  }
+  
+  .cta-subtitle {
+    font-size: 1rem;
+    margin-bottom: 2rem;
   }
   
   .cta-buttons {
     flex-direction: column;
     align-items: center;
+    gap: 1rem;
   }
   
   .cta-primary,
   .cta-secondary {
     width: 100%;
-    max-width: 300px;
+    max-width: 280px;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    min-height: 44px;
   }
 }
 
-@media (max-width: 480px) {
+/* Small tablets and large phones (481px to 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
   .about-page {
-    padding-top: 13vh; /* Even more padding on small screens */
+    padding-top: 80px;
   }
   
-  .value-card,
-  .service-item {
-    padding: 1.5rem;
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .about-hero {
+    padding: 0;
   }
   
   .hero-title {
-    font-size: 2rem;
+    font-size: clamp(2.2rem, 6vw, 2.8rem);
+    margin-bottom: 1.25rem;
+  }
+  
+  .hero-subtitle {
+    font-size: clamp(1rem, 3vw, 1.2rem);
+  }
+  
+  .mission-section,
+  .values-section,
+  .story-section,
+  .services-overview,
+  .team-section,
+  .cta-section {
+    padding: 2rem 0;
   }
   
   .section-title {
-    font-size: 1.75rem;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    margin-bottom: 2rem;
+  }
+  
+  .mission-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+  
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+  
+  .value-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .value-icon {
+    font-size: 2.8rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .value-title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .value-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .story-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+  
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+  
+  .service-item {
+    padding: 2rem 1.5rem;
+  }
+  
+  .service-icon {
+    font-size: 2.3rem;
+    margin-bottom: 1rem;
+  }
+  
+  .service-item h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .service-item p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  
+  .commitment-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+  
+  .commitment-item {
+    padding: 1.5rem;
+  }
+  
+  .commitment-item h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .commitment-item p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  
+  .cta-title {
+    font-size: clamp(1.8rem, 5vw, 2.2rem);
+    margin-bottom: 1rem;
+  }
+  
+  .cta-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 2.25rem;
+  }
+  
+  .cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .cta-primary,
+  .cta-secondary {
+    flex: 1;
+    max-width: 200px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+}
+
+/* Tablets (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .about-page {
+    padding-top: 80px;
+  }
+  
+  .container {
+    padding: 0 1.5rem;
+  }
+  
+  .about-hero {
+    padding:0;
+  }
+  
+  .hero-title {
+    font-size: clamp(2.5rem, 4vw, 3.2rem);
+    margin-bottom: 1.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+  }
+  
+  .mission-section,
+  .values-section,
+  .story-section,
+  .services-overview,
+  .team-section,
+  .cta-section {
+    padding: 2rem 0;
+  }
+  
+  .section-title {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    margin-bottom: 2.5rem;
+  }
+  
+  .mission-text {
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+  
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  
+  .value-card {
+    padding: 2.5rem 2rem;
+  }
+  
+  .value-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .value-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .value-description {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .story-text {
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+  
+  .services-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  
+  .service-item {
+    padding: 2rem;
+  }
+  
+  .service-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .service-item h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .service-item p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  
+  .commitment-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  
+  .commitment-item {
+    padding: 1.5rem;
+  }
+  
+  .commitment-item h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .commitment-item p {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  
+  .cta-title {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    margin-bottom: 1rem;
+  }
+  
+  .cta-subtitle {
+    font-size: 1.125rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  .cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  
+  .cta-primary,
+  .cta-secondary {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+}
+
+/* Desktop and larger (1025px+) */
+@media (min-width: 1025px) {
+  .about-page {
+    padding-top: 80px;
+  }
+  
+  .container {
+    padding: 0 2rem;
+  }
+  
+  .about-hero {
+    padding: 0;
+  }
+  
+  .hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 1.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.25rem;
+  }
+  
+  .mission-section,
+  .values-section,
+  .story-section,
+  .services-overview,
+  .team-section,
+  .cta-section {
+  padding: 3rem 0;
+  }
+  
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 2rem;
+  }
+  
+  .mission-text {
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+  
+  .values-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  
+  .services-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  
+  .commitment-content {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
   }
 }

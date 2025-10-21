@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { getApiEndpoint } from '../config/api.js';
+import { BASE_API_URL } from '../config/api.js';
 
 // Create axios instance with default config
 const apiClient = axios.create({
+  baseURL: `${BASE_API_URL}/api`,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -14,14 +15,11 @@ apiClient.interceptors.request.use(
   (config) => {
     // Get user ID from localStorage
     const currentUser = localStorage.getItem('currentUser');
-    console.log('API Client - Current user from localStorage:', currentUser);
     if (currentUser) {
       try {
         const user = JSON.parse(currentUser);
-        console.log('API Client - Parsed user:', user);
         if (user._id) {
           config.headers['user-id'] = user._id;
-          console.log('API Client - Added user-id header:', user._id);
         } else {
           console.warn('API Client - User has no _id field');
         }
@@ -31,7 +29,6 @@ apiClient.interceptors.request.use(
     } else {
       console.warn('API Client - No user found in localStorage');
     }
-    console.log('API Client - Request headers:', config.headers);
     return config;
   },
   (error) => {

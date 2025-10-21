@@ -3,15 +3,11 @@ import User from '../models/user.model.js';
 // Middleware to verify if user is authenticated
 export const authenticateUser = async (req, res, next) => {
   try {
-    console.log('Auth middleware - Request headers:', req.headers);
-    
     // Get user ID from request (could be from token, session, or header)
     const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body.userId || req.query.userId;
     
-    console.log('Auth middleware - Extracted user ID:', userId);
     
     if (!userId) {
-      console.log('Auth middleware - No user ID found');
       return res.status(401).json({
         success: false,
         message: 'Access denied. User ID required.',
@@ -20,11 +16,9 @@ export const authenticateUser = async (req, res, next) => {
     }
 
     // Find user in database
-    console.log('Auth middleware - Looking for user with ID:', userId);
     const user = await User.findById(userId).select('-password');
     
     if (!user) {
-      console.log('Auth middleware - User not found in database');
       return res.status(401).json({
         success: false,
         message: 'Access denied. User not found.',
@@ -32,7 +26,6 @@ export const authenticateUser = async (req, res, next) => {
       });
     }
 
-    console.log('Auth middleware - User found:', user.username);
     // Add user to request object for use in route handlers
     req.user = user;
     next();

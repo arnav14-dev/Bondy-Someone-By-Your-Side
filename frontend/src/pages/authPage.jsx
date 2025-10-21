@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Lock, 
-  Eye, 
-  EyeOff, 
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
   CheckCircle,
   ArrowRight,
   ArrowLeft,
@@ -17,7 +17,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { z } from 'zod';
 import { getApiEndpoint } from '../config/api.js';
 import axios from 'axios';
-import '../styles/AuthPage.css';
+import '../styles/authPageUnique.css';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(false);
@@ -41,7 +41,7 @@ const AuthPage = () => {
       ...prev,
       [fieldName]: errorMessage
     }));
-    
+
     setTimeout(() => {
       setPlaceholderErrors(prev => ({
         ...prev,
@@ -70,7 +70,7 @@ const AuthPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
-    
+
     if (files && files[0]) {
       setFormData(prev => ({
         ...prev,
@@ -105,7 +105,7 @@ const AuthPage = () => {
 
   const validateStep = (step) => {
     const newErrors = {};
-    
+
     if (step === 1) {
       if (isLogin) {
         if (!formData.contactNumber) {
@@ -131,9 +131,9 @@ const AuthPage = () => {
         }
       }
     }
-    
+
     // Step 2 (Profile Picture) is optional - no validation needed
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -153,12 +153,12 @@ const AuthPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Only submit if it's the final step or login
     if (!isLogin && currentStep < steps.length) {
       return;
     }
-    
+
     // Additional validation before submission
     if (!isLogin) {
       if (!formData.profilePictureFile) {
@@ -166,22 +166,21 @@ const AuthPage = () => {
         return;
       }
     }
-    
+
     setIsLoading(true);
-    
+
     // Test backend connection first
     try {
       setLoadingStep('Connecting to server...');
-      const response = await axios.get('http://localhost:3001/', { timeout: 5000 });
+      const baseUrl = getApiEndpoint('/').replace('/api', '');
+      const response = await axios.get(baseUrl, { timeout: 5000 });
     } catch (error) {
-      console.error('Backend connection failed:', error);
-      console.error('Error URL:', error.config?.url);
       toast.error('Cannot connect to server. Please ensure the backend is running.');
       setIsLoading(false);
       setLoadingStep('');
       return;
     }
-    
+
     try {
       if (isLogin) {
         // Login logic
@@ -190,14 +189,11 @@ const AuthPage = () => {
           password: formData.password
         };
 
-        console.log('Login data being sent:', loginData);
-        console.log('Contact number length:', formData.contactNumber?.length);
-        
+
         setLoadingStep('Signing you in...');
         const validatedData = loginSchema.parse(loginData);
-        console.log('Validated login data:', validatedData);
         const response = await axios.post(getApiEndpoint('/auth/login'), validatedData);
-        
+
         if (response.data.success) {
           localStorage.setItem('currentUser', JSON.stringify(response.data.data));
           toast.success('Login successful!');
@@ -206,9 +202,9 @@ const AuthPage = () => {
       } else {
         // Signup logic
         const validatedData = signupSchema.parse(formData);
-        
+
         // Handle file uploads
-      let profilePictureUrl = null;
+        let profilePictureUrl = null;
 
         if (formData.profilePictureFile) {
           try {
@@ -224,20 +220,19 @@ const AuthPage = () => {
                 'Content-Type': 'application/json'
               }
             });
-            
+
             // Upload the actual file to S3 using the pre-signed URL
             const uploadResponse = await axios.put(profileResponse.data.data.uploadUrl, formData.profilePictureFile, {
               headers: {
                 'Content-Type': formData.profilePictureFile.type
               }
             });
-            
+
             // Get the S3 file name for storage
             const s3FileName = profileResponse.data.data.s3FileName;
             profilePictureUrl = s3FileName;
           } catch (error) {
-            console.error('Profile picture upload error:', error);
-            console.error('Upload URL was:', error.config?.url);
+            console.error('Profile picture upload error');
             if (error.code === 'ERR_NETWORK') {
               throw new Error('Cannot connect to server. Please check if the backend is running.');
             }
@@ -246,7 +241,7 @@ const AuthPage = () => {
         }
 
 
-            const signupData = {
+        const signupData = {
           ...validatedData,
           profilePicture: profilePictureUrl || null,
           profilePictureOriginalName: formData.profilePictureFile?.name || null,
@@ -262,21 +257,17 @@ const AuthPage = () => {
         setLoadingStep('Creating your account...');
 
         const response = await axios.post(getApiEndpoint('/auth/signup'), signupData);
-        
+
         if (response.data.success) {
           localStorage.setItem('currentUser', JSON.stringify(response.data.data));
           toast.success('Account created successfully!');
           window.location.href = '/home';
         }
       }
-        } catch (error) {
-      console.error('Auth error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
+    } catch (error) {
       // Clear any existing toasts first
       toast.dismiss();
-      
+
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else if (error.response?.data?.error) {
@@ -285,13 +276,13 @@ const AuthPage = () => {
         const errorMessages = error.errors.map(err => err.message).join(', ');
         toast.error(errorMessages);
       } else {
-        toast.error(`Request failed: ${error.response?.status || 'Unknown error'}`);
+        toast.error('An error occurred. Please try again.');
       }
-        } finally {
-            setIsLoading(false);
-            setLoadingStep('');
-        }
-    };
+    } finally {
+      setIsLoading(false);
+      setLoadingStep('');
+    }
+  };
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
@@ -307,8 +298,8 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="auth-page">
-      <Toaster 
+    <div className="auth-unique-page">
+      <Toaster
         position="top-center"
         toastOptions={{
           duration: 4000,
@@ -318,205 +309,205 @@ const AuthPage = () => {
           },
         }}
       />
-      
+
       {/* Background */}
-      <div className="auth-background">
-        <div className="auth-background-gradient" />
-        <div className="auth-background-pattern" />
+      <div className="auth-unique-background">
+        <div className="auth-unique-background-gradient" />
+        <div className="auth-unique-background-pattern" />
       </div>
 
       {/* Main Content */}
-    <div className="auth-container">
+      <div className="auth-unique-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="auth-card"
+          className="auth-unique-card"
         >
           {/* Header */}
-        <div className="auth-header">
-            <div className="auth-logo">
-              <img src="/assets/logo.png" alt="Bondy Logo" className="logo-image" />
+          <div className="auth-unique-header">
+            <div className="auth-unique-logo">
+              <img src="/assets/logo.png" alt="Bondy Logo" className="auth-unique-logo-image" />
             </div>
-            <h1 className="auth-title">
+            <h1 className="auth-unique-title">
               {isLogin ? 'Welcome Back' : 'Join Our Community'}
             </h1>
-            <p className="auth-subtitle">
-              {isLogin 
+            <p className="auth-unique-subtitle">
+              {isLogin
                 ? 'Sign in to continue your journey with us'
                 : 'Create your account and start connecting with trusted companions'
               }
             </p>
-              {/* Progress Steps (Signup only) */}
-              {!isLogin && (
-        <motion.div 
-          className="auth-steps"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <div className="step-counter">
-            {currentStep}/{steps.length}
-          </div>
-        </motion.div>
-              )}
+            {/* Progress Steps (Signup only) */}
+            {!isLogin && (
+              <motion.div
+                className="auth-unique-steps"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <div className="auth-unique-step-counter">
+                  {currentStep}/{steps.length}
+                </div>
+              </motion.div>
+            )}
           </div>
 
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-content">
-            {/* Step 1: Account Details */}
-            {currentStep === 1 && (
-              <div className="form-step">
-          {isLogin ? (
-            <div className="form-group">
-              <div className="input-group">
-                <Phone className="input-icon" />
-                <input
-                  type="tel"
-                  name="contactNumber"
-                  value={formData.contactNumber}
-                  onChange={handleInputChange}
-                  className={`input ${errors.contactNumber ? 'input-error' : ''}`}
-                  placeholder={placeholderErrors.contactNumber || "Enter your contact number"}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="form-group">
-              <div className="input-group">
-                <User className="input-icon" />
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className={`input ${errors.username ? 'input-error' : ''}`}
-                  placeholder={placeholderErrors.username || "Enter your username"}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="form-group">
-                    <div className="input-group">
-                      <Lock className="input-icon" />
-                            <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        className={`input ${errors.password ? 'input-error' : ''}`}
-                        placeholder={placeholderErrors.password || "Enter your password"}
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    </div>
-                    </div>
-
-                  {!isLogin && (
-          <div className="form-group">
-                      <div className="input-group">
-                        <Phone className="input-icon" />
+          <form onSubmit={handleSubmit} className="auth-unique-form">
+            <div className="auth-unique-form-content">
+              {/* Step 1: Account Details */}
+              {currentStep === 1 && (
+                <div className="auth-unique-form-step">
+                  {isLogin ? (
+                    <div className="auth-unique-form-group">
+                      <div className="auth-unique-input-group">
+                        <Phone className="auth-unique-input-icon" />
                         <input
                           type="tel"
                           name="contactNumber"
                           value={formData.contactNumber}
                           onChange={handleInputChange}
-                          className={`input ${errors.contactNumber ? 'input-error' : ''}`}
+                          className={`auth-unique-input ${errors.contactNumber ? 'auth-unique-input-error' : ''}`}
+                          placeholder={placeholderErrors.contactNumber || "Enter your contact number"}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="auth-unique-form-group">
+                      <div className="auth-unique-input-group">
+                        <User className="auth-unique-input-icon" />
+                        <input
+                          type="text"
+                          name="username"
+                          value={formData.username}
+                          onChange={handleInputChange}
+                          className={`auth-unique-input ${errors.username ? 'auth-unique-input-error' : ''}`}
+                          placeholder={placeholderErrors.username || "Enter your username"}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="auth-unique-form-group">
+                    <div className="auth-unique-input-group">
+                      <Lock className="auth-unique-input-icon" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`auth-unique-input ${errors.password ? 'auth-unique-input-error' : ''}`}
+                        placeholder={placeholderErrors.password || "Enter your password"}
+                      />
+                      <button
+                        type="button"
+                        className="auth-unique-password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isLogin && (
+                    <div className="auth-unique-form-group">
+                      <div className="auth-unique-input-group">
+                        <Phone className="auth-unique-input-icon" />
+                        <input
+                          type="tel"
+                          name="contactNumber"
+                          value={formData.contactNumber}
+                          onChange={handleInputChange}
+                          className={`auth-unique-input ${errors.contactNumber ? 'auth-unique-input-error' : ''}`}
                           placeholder={placeholderErrors.contactNumber || "Enter your 10-digit phone number"}
                         />
                       </div>
                     </div>
                   )}
-              </div>
-            )}
+                </div>
+              )}
 
 
-            {/* Step 2: Profile Picture (Signup only) */}
-            {!isLogin && currentStep === 2 && (
-              <div className="form-step">
-                  <div className="profile-picture-header">
-                    <h3><Camera className="profile-icon" /> Add Your Photo (Optional)</h3>
+              {/* Step 2: Profile Picture (Signup only) */}
+              {!isLogin && currentStep === 2 && (
+                <div className="auth-unique-form-step">
+                  <div className="auth-unique-profile-picture-header">
+                    <h3><Camera className="auth-unique-profile-icon" /> Add Your Photo (Optional)</h3>
                     <p>Help others recognize you by adding a clear profile picture</p>
                   </div>
 
-                  <div className="profile-picture-upload">
-              <input
-                type="file"
-                        name="profilePicture"
+                  <div className="auth-unique-profile-picture-upload">
+                    <input
+                      type="file"
+                      name="profilePicture"
                       onChange={handleInputChange}
                       accept="image/*"
                       id="profile-upload"
-                className="file-input"
+                      className="auth-unique-file-input"
                     />
-                    <label htmlFor="profile-upload" className="upload-area">
+                    <label htmlFor="profile-upload" className="auth-unique-upload-area">
                       {formData.profilePictureFile ? (
-                        <div className="uploaded-image">
+                        <div className="auth-unique-uploaded-image">
                           <img
                             src={URL.createObjectURL(formData.profilePictureFile)}
                             alt="Profile preview"
-                            className="preview-image"
+                            className="auth-unique-preview-image"
                           />
-                          <div className="upload-overlay">
+                          <div className="auth-unique-upload-overlay">
                             <Upload size={24} />
                             <span>Change Photo</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="upload-placeholder">
+                        <div className="auth-unique-upload-placeholder">
                           <Upload size={48} />
                           <span>Click to upload photo</span>
                           <p>JPG, PNG up to 5MB</p>
                         </div>
                       )}
-              </label>
-            </div>
-              </div>
-            )}
+                    </label>
+                  </div>
+                </div>
+              )}
 
-            {/* Step 3: Complete (Signup only) */}
-            {!isLogin && currentStep === 3 && (
-              <div className="form-step">
-                  <div className="completion-header">
-                    <h3><CheckCircle className="completion-icon" /> Review Your Information</h3>
+              {/* Step 3: Complete (Signup only) */}
+              {!isLogin && currentStep === 3 && (
+                <div className="auth-unique-form-step">
+                  <div className="auth-unique-completion-header">
+                    <h3><CheckCircle className="auth-unique-completion-icon" /> Review Your Information</h3>
                     <p>Please review your details before creating your account</p>
-          </div>
+                  </div>
 
-                  <div className="review-section">
-                    <div className="review-item">
-                      <span className="review-label">Username:</span>
-                      <span className="review-value">{formData.username}</span>
+                  <div className="auth-unique-review-section">
+                    <div className="auth-unique-review-item">
+                      <span className="auth-unique-review-label">Username:</span>
+                      <span className="auth-unique-review-value">{formData.username}</span>
                     </div>
-                    <div className="review-item">
-                      <span className="review-label">Contact:</span>
-                      <span className="review-value">{formData.contactNumber}</span>
+                    <div className="auth-unique-review-item">
+                      <span className="auth-unique-review-label">Contact:</span>
+                      <span className="auth-unique-review-value">{formData.contactNumber}</span>
                     </div>
                     {formData.profilePictureFile && (
-                      <div className="review-item">
-                        <span className="review-label">Profile Picture:</span>
-                        <span className="review-value">✓ Uploaded</span>
+                      <div className="auth-unique-review-item">
+                        <span className="auth-unique-review-label">Profile Picture:</span>
+                        <span className="auth-unique-review-value">✓ Uploaded</span>
                       </div>
                     )}
                   </div>
-              </div>
-            )}
+                </div>
+              )}
             </div>
-            
+
             {/* Form Actions - Fixed at bottom */}
-            <div className="form-actions">
+            <div className="auth-unique-form-actions">
               {!isLogin && currentStep > 1 && (
                 <button
                   type="button"
                   onClick={prevStep}
                   disabled={isLoading}
-                  className="btn btn-outline"
+                  className="auth-unique-btn auth-unique-btn-outline"
                 >
                   <ArrowLeft size={20} />
                   Previous
@@ -528,21 +519,21 @@ const AuthPage = () => {
                   type="button"
                   onClick={nextStep}
                   disabled={isLoading}
-                  className="btn btn-primary"
+                  className="auth-unique-btn auth-unique-btn-primary"
                 >
                   Next
                   <ArrowRight size={20} />
                 </button>
               ) : (
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isLoading}
-                  className="btn btn-primary"
+                  className="auth-unique-btn auth-unique-btn-primary"
                 >
                   {isLoading ? (
-                    <div className="loading-container">
-                      <div className="loading-spinner" />
-                      <span className="loading-text">{loadingStep}</span>
+                    <div className="auth-unique-loading-container">
+                      <div className="auth-unique-loading-spinner" />
+                      <span className="auth-unique-loading-text">{loadingStep}</span>
                     </div>
                   ) : (
                     <>
@@ -556,21 +547,21 @@ const AuthPage = () => {
           </form>
 
           {/* Auth Toggle */}
-          <div className="auth-toggle">
+          <div className="auth-unique-auth-toggle">
             <p>
               {isLogin ? "Don't have an account?" : "Already have an account?"}
-            <button
-              type="button"
-              onClick={toggleAuthMode}
-              className="toggle-link"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
+              <button
+                type="button"
+                onClick={toggleAuthMode}
+                className="auth-unique-toggle-link"
+              >
+                {isLogin ? 'Sign Up' : 'Sign In'}
+              </button>
             </p>
           </div>
         </motion.div>
-            </div>
-        </div>
+      </div>
+    </div>
   );
 };
 

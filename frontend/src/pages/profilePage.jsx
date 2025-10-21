@@ -25,17 +25,19 @@ const ProfilePage = () => {
       
       if (response.data.success) {
         const userData = response.data.data;
+        console.log('User data received:', userData);
         setUser(userData);
         setFormData({
           username: userData.username || '',
-          contactNumber: userData.contactNumber || '',
-          governmentIdType: userData.governmentIdType || '',
-          governmentId: userData.governmentId || ''
+          contactNumber: userData.contactNumber || ''
         });
         
         // Fetch profile image
         if (userData.profilePicture) {
-          fetchProfileImage(userData.profilePicture);
+          console.log('Profile picture found:', userData.profilePicture);
+          fetchProfileImage(userData.profilePicture, userData._id);
+        } else {
+          console.log('No profile picture found in user data');
         }
       }
     } catch (error) {
@@ -45,21 +47,27 @@ const ProfilePage = () => {
     }
   };
 
-  const fetchProfileImage = async (s3FileName) => {
+  const fetchProfileImage = async (s3FileName, userId) => {
     try {
-      const response = await fetch(`${BASE_API_URL}/s3/get-image-from-s3`, {
+      console.log('Fetching profile image:', { s3FileName, userId });
+      
+      const response = await fetch(`${BASE_API_URL}/api/s3/get-image-from-s3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': user?._id || ''
+          'user-id': userId || ''
         },
         body: JSON.stringify({ s3FileName }),
       });
 
       const data = await response.json();
+      console.log('Profile image response:', data);
       
       if (data.success) {
         setProfileImageUrl(data.data.imageUrl);
+        console.log('Profile image URL set:', data.data.imageUrl);
+      } else {
+        console.error('Failed to fetch profile image:', data.message);
       }
     } catch (err) {
       console.error('Error fetching profile image:', err);
@@ -87,10 +95,19 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     try {
-      // Here you would typically update the user profile
-      // For now, we'll just show a success message
-      alert('Profile updated successfully!');
-      setEditing(false);
+      const response = await apiClient.put(`${BASE_API_URL}/auth/update-profile`, formData);
+      
+      if (response.data.success) {
+        // Update the user state with new data
+        setUser(prevUser => ({
+          ...prevUser,
+          ...formData
+        }));
+        alert('Profile updated successfully!');
+        setEditing(false);
+      } else {
+        alert('Failed to update profile. Please try again.');
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Failed to update profile. Please try again.');
@@ -100,9 +117,7 @@ const ProfilePage = () => {
   const handleCancel = () => {
     setFormData({
       username: user?.username || '',
-      contactNumber: user?.contactNumber || '',
-      governmentIdType: user?.governmentIdType || '',
-      governmentId: user?.governmentId || ''
+      contactNumber: user?.contactNumber || ''
     });
     setEditing(false);
   };
@@ -146,39 +161,44 @@ const ProfilePage = () => {
               {/* Profile Card */}
               <div className="profile-card">
                 <div className="profile-image-section">
-                  <div className="profile-image-container">
-                    {profileImageUrl ? (
-                      <img
-                        src={profileImageUrl}
-                        alt="Profile"
-                        className="profile-image"
-                      />
-                    ) : (
-                      <div className="profile-placeholder">
-                        👤
-                      </div>
-                    )}
+                  <div className="profile-image-wrapper">
+                    <div className="profile-image-container">
+                      {profileImageUrl ? (
+                        <img
+                          src={profileImageUrl}
+                          alt="Profile"
+                          className="profile-image"
+                          onLoad={() => console.log('Profile image loaded successfully')}
+                          onError={(e) => {
+                            console.error('Profile image failed to load:', e);
+                            setProfileImageUrl(null);
+                          }}
+                        />
+                      ) : (
+                        <div className="profile-placeholder">
+                          👤
+                        </div>
+                      )}
+                    </div>
+                    <div className="verification-badge">
+                      ✓
+                    </div>
                   </div>
-                  <button className="edit-image-btn">
-                    📷 Change Photo
-                  </button>
+                  <div className="profile-name-container"> 
+                    <h2 className="profile-name">{user?.username ? user.username.split(' ')[0].substring(0, 10) : 'User'}</h2>
+                    <p className="profile-email">{user?.contactNumber}</p>
+                  </div>
                 </div>
 
-                <div className="profile-info">
-                  <h2 className="profile-name">{user?.username ? user.username.split(' ')[0].substring(0, 10) : 'User'}</h2>
-                  <p className="profile-email">{user?.contactNumber}</p>
-                  <div className="profile-badges">
-                    <span className="badge verified">✅ Verified User</span>
-                    <span className="badge member">🤝 Companion Member</span>
+                  <div className="profile-info">
                   </div>
-                </div>
 
                 <div className="profile-actions">
                   <button
                     className="action-btn primary"
                     onClick={() => setEditing(!editing)}
                   >
-                    {editing ? 'Cancel' : '✏️ Edit Profile'}
+                    {editing ? 'Cancel' : 'Edit Profile'}
                   </button>
                   {editing && (
                     <button
@@ -196,24 +216,15 @@ const ProfilePage = () => {
                 <h3 className="card-title">Your Activity</h3>
                 <div className="stats-grid">
                   <div className="stat-item">
-                    <div className="stat-icon">📅</div>
                     <div className="stat-content">
                       <span className="stat-number">{stats.totalBookings || 0}</span>
                       <span className="stat-label">Total Bookings</span>
                     </div>
                   </div>
                   <div className="stat-item">
-                    <div className="stat-icon">✅</div>
                     <div className="stat-content">
                       <span className="stat-number">{stats.completedBookings || 0}</span>
                       <span className="stat-label">Completed</span>
-                    </div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-icon">⭐</div>
-                    <div className="stat-content">
-                      <span className="stat-number">{stats.averageRating ? stats.averageRating.toFixed(1) : '0.0'}</span>
-                      <span className="stat-label">Avg Rating</span>
                     </div>
                   </div>
                 </div>
@@ -232,9 +243,10 @@ const ProfilePage = () => {
                         value={formData.username}
                         onChange={handleInputChange}
                         className="form-input"
+                        placeholder="Enter your username"
                       />
                     ) : (
-                      <p className="form-value">{user?.username}</p>
+                      <p className="form-value">{user?.username || 'Not set'}</p>
                     )}
                   </div>
 
@@ -247,53 +259,13 @@ const ProfilePage = () => {
                         value={formData.contactNumber}
                         onChange={handleInputChange}
                         className="form-input"
+                        placeholder="Enter your contact number"
                       />
                     ) : (
-                      <p className="form-value">{user?.contactNumber}</p>
+                      <p className="form-value">{user?.contactNumber || 'Not provided'}</p>
                     )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">ID Type</label>
-                    {editing ? (
-                      <select
-                        name="governmentIdType"
-                        value={formData.governmentIdType}
-                        onChange={handleInputChange}
-                        className="form-select"
-                      >
-                        <option value="">Select ID Type</option>
-                        <option value="Aadhar">Aadhar Card</option>
-                        <option value="PAN">PAN Card</option>
-                        <option value="Driving License">Driving License</option>
-                        <option value="Passport">Passport</option>
-                      </select>
-                    ) : (
-                      <p className="form-value">{user?.governmentIdType || 'Not provided'}</p>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">ID Number</label>
-                    {editing ? (
-                      <input
-                        type="text"
-                        name="governmentId"
-                        value={formData.governmentId}
-                        onChange={handleInputChange}
-                        className="form-input"
-                      />
-                    ) : (
-                      <p className="form-value">{user?.governmentId ? '••••••••••' : 'Not provided'}</p>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Verification Method</label>
-                    <p className="form-value">
-                      {user?.idVerificationMethod === 'number' ? 'ID Number' : 'ID Image'}
-                    </p>
-                  </div>
 
                   <div className="form-group">
                     <label className="form-label">Member Since</label>
@@ -313,19 +285,40 @@ const ProfilePage = () => {
                 <h3 className="card-title">Quick Actions</h3>
                 <div className="action-buttons">
                   <a href="/home" className="action-link">
-                    <span className="action-icon">🏠</span>
+                    <span className="action-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9,22 9,12 15,12 15,22"/>
+                      </svg>
+                    </span>
                     <span className="action-text">Book a Companion</span>
                   </a>
                   <a href="/bookings" className="action-link">
-                    <span className="action-icon">📅</span>
+                    <span className="action-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                    </span>
                     <span className="action-text">View Bookings</span>
                   </a>
                   <a href="#" className="action-link">
-                    <span className="action-icon">⚙️</span>
+                    <span className="action-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                    </span>
                     <span className="action-text">Settings</span>
                   </a>
                   <a href="#" className="action-link">
-                    <span className="action-icon">📞</span>
+                    <span className="action-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                    </span>
                     <span className="action-text">Support</span>
                   </a>
                 </div>

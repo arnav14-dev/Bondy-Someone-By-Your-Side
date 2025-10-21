@@ -300,19 +300,27 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close menu when clicking outside
   useEffect(() => {
-    console.log('Navbar user effect triggered:', user);
-    console.log('User profilePicture:', user?.profilePicture);
-    console.log('User _id:', user?._id);
-    console.log('User id:', user?.id);
+    const handleClickOutside = (event) => {
+      if (menuOpen && !event.target.closest('.nav-links') && !event.target.closest('.hamburger')) {
+        setMenuOpen(false);
+        setDropdownOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [menuOpen]);
+
+  useEffect(() => {
     
     if (user?.profilePicture) {
-      console.log('User has profile picture:', user.profilePicture);
-      console.log('User ID:', user._id || user.id);
       // Fetch fresh data directly
       fetchProfileImageOptimized(user.profilePicture, user._id || user.id);
     } else {
-      console.log('No profile picture found in user object');
       setProfileImageUrl(null);
       setIsLoadingImage(false);
     }
@@ -366,19 +374,15 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
   };
 
   const fetchProfileImageOptimized = async (s3FileName, userId) => {
-    console.log('fetchProfileImageOptimized called:', { s3FileName, userId });
     if (!s3FileName || !userId) {
-      console.log('Early return - missing data:', { s3FileName, userId });
       return;
     }
 
     const cacheKey = `${userId}-${s3FileName}`;
-    console.log('Cache key:', cacheKey);
     
     // Check cache first
     if (profileImageCache.has(cacheKey)) {
       const cachedUrl = profileImageCache.get(cacheKey);
-      console.log('Found in memory cache:', cachedUrl);
       setProfileImageUrl(cachedUrl);
       return;
     }
@@ -423,15 +427,11 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
   };
 
   const fetchProfileImage = async (s3FileName, userId, cacheKey) => {
-    console.log('fetchProfileImage called:', { s3FileName, userId, cacheKey });
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const url = `${BASE_API_URL}/s3/get-image-from-s3`;
-      console.log('Fetching from URL:', url);
-      console.log('Request body:', JSON.stringify({ s3FileName }));
-      console.log('User ID header:', userId);
+      const url = `${BASE_API_URL}/api/s3/get-image-from-s3`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -444,15 +444,11 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
       });
 
       clearTimeout(timeoutId);
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Response data:', data);
         if (data.success && data.data?.imageUrl) {
           const imageUrl = data.data.imageUrl;
-          console.log('Got image URL:', imageUrl);
           
           // Cache the result in memory only
           profileImageCache.set(cacheKey, imageUrl);
@@ -460,7 +456,6 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
           // Preload the image to ensure it's ready
           const img = new Image();
           img.onload = () => {
-            console.log('Image preloaded successfully');
           };
           img.onerror = () => {
             console.error('Failed to preload image:', imageUrl);
@@ -469,11 +464,9 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
           
           return imageUrl;
         } else {
-          console.log('No image URL in response:', data);
         }
       } else {
         const errorText = await response.text();
-        console.log('Response not ok:', response.status, response.statusText, errorText);
       }
       
       return null;
@@ -494,8 +487,8 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
         <div className="logo-section" onClick={handleHomeClick}>
         </div>
 
-        {/* Right side: Navigation Links */}
-        <div className={`nav-links ${menuOpen ? "active" : ""}`}>
+        {/* Desktop Navigation Links */}
+        <div className="nav-links desktop-nav">
           <button onClick={handleHomeClick} className="nav-link-btn">Home</button>
           <button onClick={handleServicesClick} className="nav-link-btn">Services</button>
           <button onClick={() => navigate('/booking')} className="nav-link-btn">Book Bondy</button>
@@ -503,7 +496,7 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
           <button onClick={() => navigate('/about')} className="nav-link-btn">About</button>
           <button onClick={() => navigate('/contact')} className="nav-link-btn">Contact</button>
 
-          {/* Conditional rendering based on login */}
+          {/* Desktop Profile Section */}
           {user ? (
             <div
               className="profile-section"
@@ -519,7 +512,6 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
                     setProfileImageUrl(null);
                   }}
                   onLoad={() => {
-                    console.log('Profile image loaded successfully');
                   }}
                 />
               ) : (
@@ -527,17 +519,59 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
                   {isLoadingImage ? (
                     <div className="loading-spinner-small"></div>
                   ) : (
-                    <span>👤</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
                   )}
                 </div>
               )}
 
               {dropdownOpen && (
                 <div className="dropdown-menu">
-                  <button onClick={() => navigate('/profile')} className="dropdown-btn">My Profile</button>
-                  <button onClick={() => navigate('/bookings')} className="dropdown-btn">My Bookings</button>
-                  <button onClick={() => navigate('/settings')} className="dropdown-btn">Settings</button>
-                  <button onClick={onLogout} className="logout-btn">
+                  <button 
+                    onClick={() => {
+                      navigate('/profile');
+                      setDropdownOpen(false);
+                    }} 
+                    className="dropdown-btn"
+                  >
+                    My Profile
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigate('/bookings');
+                      setDropdownOpen(false);
+                    }} 
+                    className="dropdown-btn"
+                  >
+                    My Bookings
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigate('/manage-locations');
+                      setDropdownOpen(false);
+                    }} 
+                    className="dropdown-btn"
+                  >
+                    Manage Locations
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigate('/settings');
+                      setDropdownOpen(false);
+                    }} 
+                    className="dropdown-btn"
+                  >
+                    Settings
+                  </button>
+                  <button 
+                    onClick={() => {
+                      onLogout();
+                      setDropdownOpen(false);
+                    }} 
+                    className="logout-btn"
+                  >
                     Logout
                   </button>
                 </div>
@@ -545,6 +579,150 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
             </div>
           ) : (
             <button onClick={() => navigate('/')} className="book-btn">Login / Sign Up</button>
+          )}
+        </div>
+
+        {/* Mobile Menu */}
+        <div className={`mobile-menu ${menuOpen ? "active" : ""}`}>
+          <button 
+            onClick={() => {
+              handleHomeClick();
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            Home
+          </button>
+          <button 
+            onClick={() => {
+              handleServicesClick();
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            Services
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/booking');
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            Book Bondy
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/bookings');
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            Bookings
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/about');
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            About
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/contact');
+              setMenuOpen(false);
+            }} 
+            className="mobile-nav-btn"
+          >
+            Contact
+          </button>
+
+          {/* Mobile Profile Section */}
+          {user ? (
+            <div className="mobile-profile-section">
+              <div className="mobile-profile-info">
+                <div className="mobile-profile-avatar">
+                  {profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={user.username || 'Profile'}
+                      className="mobile-avatar-image"
+                    />
+                  ) : (
+                    <div className="mobile-avatar-placeholder">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="mobile-profile-details">
+                  <p className="mobile-profile-name">{user?.username || 'User'}</p>
+                  <p className="mobile-profile-email">{user?.contactNumber || ''}</p>
+                </div>
+              </div>
+              
+              <div className="mobile-profile-actions">
+                <button 
+                  onClick={() => {
+                    navigate('/profile');
+                    setMenuOpen(false);
+                  }} 
+                  className="mobile-profile-btn"
+                >
+                  My Profile
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/bookings');
+                    setMenuOpen(false);
+                  }} 
+                  className="mobile-profile-btn"
+                >
+                  My Bookings
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/manage-locations');
+                    setMenuOpen(false);
+                  }} 
+                  className="mobile-profile-btn"
+                >
+                  Manage Locations
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/settings');
+                    setMenuOpen(false);
+                  }} 
+                  className="mobile-profile-btn"
+                >
+                  Settings
+                </button>
+                <button 
+                  onClick={() => {
+                    onLogout();
+                    setMenuOpen(false);
+                  }} 
+                  className="mobile-logout-btn"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button 
+              onClick={() => {
+                navigate('/');
+                setMenuOpen(false);
+              }} 
+              className="mobile-login-btn"
+            >
+              Login / Sign Up
+            </button>
           )}
         </div>
 

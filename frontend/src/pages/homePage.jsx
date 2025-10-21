@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/authPage.css';
+import { motion } from 'framer-motion';
 import '../styles/homePage.css';
 import { BASE_API_URL } from '../config/api.js';
 import apiClient from '../utils/apiClient.js';
@@ -82,7 +82,7 @@ const HomePage = () => {
     setIsLoadingProfileImage(true);
     
     try {
-      const response = await fetch(`${BASE_API_URL}/s3/get-image-from-s3`, {
+      const response = await fetch(`${BASE_API_URL}/api/s3/get-image-from-s3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,27 +160,63 @@ const HomePage = () => {
       
       <main className="main-content">
         {/* Hero Section */}
-        <section className="hero-section">
+        <section className="hero-section" role="banner">
           <div className="hero-container">
-            <div className="hero-content">
-              <h1 className="hero-title">
+            <motion.div 
+              className="hero-content"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <div className="hero-content-text">
+              <motion.h1 
+                className="hero-title"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              >
                 Find someone by your side.
-              </h1>
-              <p className="hero-subtitle">
+              </motion.h1>
+              <motion.p 
+                className="hero-subtitle"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+              >
                 Trusted, verified companions for care, errands, and meaningful connection—whenever you need a hand.
-              </p>
-              <div className="hero-ctas">
+              </motion.p>
+              </div>
+              <motion.div 
+                className="hero-ctas"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+              >
                 <button className="cta-primary" onClick={handleBookBondy}>
                   Book a Bondy
                 </button>
-              </div>
-              <p className="trust-builder">
+              </motion.div>
+              <motion.p 
+                className="trust-builder"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+              >
                 Every Bondy is background-checked and kindness-certified.
-              </p>
-            </div>
-            <div className="hero-visual">
-              <img src="../assets/homepageOldLady.png" alt="Young person helping elderly person" className="hero-image" />
-            </div>
+              </motion.p>
+            </motion.div>
+            <motion.div 
+              className="hero-visual"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            >
+              <img 
+                src="/assets/homepageOldLady.png" 
+                alt="Young person helping elderly person" 
+                className="hero-image" 
+              />
+            </motion.div>
           </div>
         </section>
 
@@ -193,7 +229,10 @@ const HomePage = () => {
             <div className="promise-pillars">
               <div className="pillar">
                 <div className="pillar-icon trust-icon">
-                  🛡️
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                  </svg>
                 </div>
                 <h3 className="pillar-title">Verified for Peace of Mind</h3>
                 <p className="pillar-description">
@@ -202,7 +241,9 @@ const HomePage = () => {
               </div>
               <div className="pillar">
                 <div className="pillar-icon connection-icon">
-                  💙
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
                 </div>
                 <h3 className="pillar-title">Genuine Human Connection</h3>
                 <p className="pillar-description">
@@ -211,7 +252,12 @@ const HomePage = () => {
               </div>
               <div className="pillar">
                 <div className="pillar-icon booking-icon">
-                  📅
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
                 </div>
                 <h3 className="pillar-title">Flexible & Simple Management</h3>
                 <p className="pillar-description">
@@ -234,7 +280,12 @@ const HomePage = () => {
             <div className="services-grid">
               <div className="service-card">
                 <div className="service-icon elderly-icon">
-                  👴
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    <path d="M6 21v-2a4 4 0 0 1 4-4h.5"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Elderly Companionship</h3>
                 <p className="service-description">
@@ -243,7 +294,11 @@ const HomePage = () => {
               </div>
               <div className="service-card">
                 <div className="service-icon shopping-icon">
-                  🛒
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Errands & Groceries</h3>
                 <p className="service-description">
@@ -252,7 +307,15 @@ const HomePage = () => {
               </div>
               <div className="service-card">
                 <div className="service-icon medical-icon">
-                  🏥
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V7l8-4v18"/>
+                    <path d="M19 21V11l-6-4"/>
+                    <path d="M9 9v.01"/>
+                    <path d="M9 12v.01"/>
+                    <path d="M9 15v.01"/>
+                    <path d="M9 18v.01"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Medical Appointments</h3>
                 <p className="service-description">
@@ -261,7 +324,11 @@ const HomePage = () => {
               </div>
               <div className="service-card">
                 <div className="service-icon tech-icon">
-                  💻
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Technology Help</h3>
                 <p className="service-description">
@@ -270,7 +337,12 @@ const HomePage = () => {
               </div>
               <div className="service-card">
                 <div className="service-icon social-icon">
-                  ☕
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Social Outings</h3>
                 <p className="service-description">
@@ -279,7 +351,13 @@ const HomePage = () => {
               </div>
               <div className="service-card">
                 <div className="service-icon admin-icon">
-                  📋
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
                 </div>
                 <h3 className="service-title">Administrative Tasks</h3>
                 <p className="service-description">

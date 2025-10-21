@@ -35,9 +35,6 @@ const Footer = () => {
   const support = [
     'Help Center',
     'Safety Guidelines',
-    'Terms of Service',
-    'Privacy Policy',
-    'Contact Support',
   ];
 
   const socialLinks = [
@@ -64,15 +61,15 @@ const Footer = () => {
             <div className="footer-contact">
               <div className="contact-item">
                 <Mail size={16} />
-                <span>support@gen-link.com</span>
+                <span>kumararnav028@gmail.com</span>
               </div>
               <div className="contact-item">
                 <Phone size={16} />
-                <span>+1 (555) 123-4567</span>
+              <span>+91 7559466990</span>
               </div>
               <div className="contact-item">
                 <MapPin size={16} />
-                <span>San Francisco, CA</span>
+                <span>Mumbai, India</span>
               </div>
             </div>
           </div>
@@ -146,7 +143,6 @@ const Footer = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="footer-bottom">
           <div className="footer-bottom-content">
             <p className="footer-copyright">
               © {currentYear} Bondy. All rights reserved.
@@ -167,7 +163,6 @@ const Footer = () => {
               })}
             </div>
           </div>
-        </div>
       </div>
     </footer>
   );

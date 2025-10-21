@@ -3,8 +3,6 @@ import Booking from '../models/booking.model.js';
 // Create a new booking
 export const createBooking = async (req, res) => {
   try {
-    console.log('createBooking - Request body:', req.body);
-    console.log('createBooking - User from auth:', req.user);
     
     const userId = req.user._id;
     const bookingData = {
@@ -12,13 +10,11 @@ export const createBooking = async (req, res) => {
       userId
     };
 
-    console.log('createBooking - Booking data with userId:', bookingData);
 
     // Validate required fields
     const requiredFields = ['serviceType', 'taskDescription', 'duration', 'date', 'time', 'location', 'emergencyContact'];
     for (const field of requiredFields) {
       if (!bookingData[field]) {
-        console.log(`createBooking - Missing required field: ${field}`);
         return res.status(400).json({
           success: false,
           message: `${field} is required`,
@@ -40,9 +36,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    console.log('createBooking - About to create booking with data:', bookingData);
     const booking = await Booking.create(bookingData);
-    console.log('createBooking - Booking created successfully:', booking);
 
     return res.status(201).json({
       success: true,
@@ -65,21 +59,16 @@ export const createBooking = async (req, res) => {
 // Get user's bookings
 export const getUserBookings = async (req, res) => {
   try {
-    console.log('getUserBookings - Request headers:', req.headers);
-    console.log('getUserBookings - User from auth middleware:', req.user);
     
     const userId = req.user._id;
     const { status, page = 1, limit = 10 } = req.query;
 
-    console.log('getUserBookings - User ID:', userId);
-    console.log('getUserBookings - Query params:', { status, page, limit });
 
     const query = { userId };
     if (status) {
       query.status = status;
     }
 
-    console.log('getUserBookings - Database query:', query);
 
     const bookings = await Booking.find(query)
       .sort({ createdAt: -1 })
@@ -89,8 +78,6 @@ export const getUserBookings = async (req, res) => {
 
     const total = await Booking.countDocuments(query);
 
-    console.log('getUserBookings - Found bookings:', bookings.length);
-    console.log('getUserBookings - Total count:', total);
 
     return res.status(200).json({
       success: true,

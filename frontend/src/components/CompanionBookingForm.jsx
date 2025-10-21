@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles/CompanionBookingForm.css';
 import { BASE_API_URL } from '../config/api.js';
 import apiClient from '../utils/apiClient.js';
+import LocationSelector from './LocationSelector.jsx';
 
 const CompanionBookingForm = ({ user }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -12,6 +13,7 @@ const CompanionBookingForm = ({ user }) => {
     date: '',
     time: '',
     location: '',
+    locationDetails: null, // Full location object from LocationSelector
     specialRequirements: '',
     
     // Step 2: Contact Details
@@ -21,33 +23,179 @@ const CompanionBookingForm = ({ user }) => {
 
   const [errors, setErrors] = useState({});
 
+  // Calculate minimum time (10 minutes from now)
+  const getMinTime = () => {
+    const now = new Date();
+    const minTime = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes from now
+    return minTime.toTimeString().slice(0, 5); // Format as HH:MM
+  };
+
   // Scroll to top when component mounts
   useEffect(() => {
     scrollToTop();
   }, []);
 
+  // Load most recent location on component mount
+  useEffect(() => {
+    const loadRecentLocation = async () => {
+      try {
+        const response = await apiClient.get('/user-locations/recent');
+        if (response.data.success && response.data.data) {
+          const recentLocation = response.data.data;
+          setFormData(prev => ({
+            ...prev,
+            locationDetails: recentLocation,
+            location: recentLocation.address
+          }));
+        }
+      } catch (error) {
+        console.log('No recent location found or error loading:', error);
+      }
+    };
+
+    loadRecentLocation();
+  }, []);
+
   const serviceCategories = [
-    { value: 'elderly-care', label: 'Elderly Companionship', icon: '👴' },
-    { value: 'shopping', label: 'Errands & Groceries', icon: '🛒' },
-    { value: 'medical', label: 'Medical Appointments', icon: '🏥' },
-    { value: 'other', label: 'Technology Help', icon: '💻' },
-    { value: 'social', label: 'Social Outings', icon: '☕' },
-    { value: 'household', label: 'Administrative Tasks', icon: '📋' }
+    { 
+      value: 'elderly-care', 
+      label: 'Elderly Companionship', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          <path d="M6 21v-2a4 4 0 0 1 4-4h.5"/>
+        </svg>
+      )
+    },
+    { 
+      value: 'shopping', 
+      label: 'Errands & Groceries', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="9" cy="21" r="1"/>
+          <circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+      )
+    },
+    { 
+      value: 'medical', 
+      label: 'Medical Appointments', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 21h18"/>
+          <path d="M5 21V7l8-4v18"/>
+          <path d="M19 21V11l-6-4"/>
+          <path d="M9 9v.01"/>
+          <path d="M9 12v.01"/>
+          <path d="M9 15v.01"/>
+          <path d="M9 18v.01"/>
+        </svg>
+      )
+    },
+    { 
+      value: 'other', 
+      label: 'Technology Help', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      )
+    },
+    { 
+      value: 'social', 
+      label: 'Social Outings', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      )
+    },
+    { 
+      value: 'household', 
+      label: 'Administrative Tasks', 
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+      )
+    }
   ];
 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: value
-    }));
+    };
+    
+    setFormData(newFormData);
     
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+
+    // Real-time validation for date and time
+    if (name === 'date' || name === 'time') {
+      validateDateTime(newFormData);
+    }
+  };
+
+  // Real-time validation for date and time
+  const validateDateTime = (currentFormData = formData) => {
+    if (currentFormData.date && currentFormData.time) {
+      const selectedDateTime = new Date(`${currentFormData.date}T${currentFormData.time}`);
+      const now = new Date();
+      const minBookingTime = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes from now
+      
+      if (selectedDateTime <= now) {
+        setErrors(prev => ({
+          ...prev,
+          time: 'Booking time must be in the future'
+        }));
+      } else if (selectedDateTime < minBookingTime) {
+        setErrors(prev => ({
+          ...prev,
+          time: 'Booking must be at least 10 minutes ahead of current time'
+        }));
+      } else {
+        // Clear time error if validation passes
+        setErrors(prev => ({
+          ...prev,
+          time: ''
+        }));
+      }
+    }
+  };
+
+  const handleLocationSelect = (location) => {
+    setFormData(prev => ({
+      ...prev,
+      locationDetails: location,
+      location: location.address
+    }));
+    
+    // Clear location error
+    if (errors.location) {
+      setErrors(prev => ({
+        ...prev,
+        location: ''
       }));
     }
   };
@@ -58,7 +206,20 @@ const CompanionBookingForm = ({ user }) => {
     if (!formData.serviceCategory) newErrors.serviceCategory = 'Please select a service category';
     if (!formData.date) newErrors.date = 'Please select a date';
     if (!formData.time) newErrors.time = 'Please select a time';
-    if (!formData.location.trim()) newErrors.location = 'Please enter location';
+    if (!formData.locationDetails) newErrors.location = 'Please select a location';
+    
+    // Validate date and time are not in the past and at least 10 minutes ahead
+    if (formData.date && formData.time) {
+      const selectedDateTime = new Date(`${formData.date}T${formData.time}`);
+      const now = new Date();
+      const minBookingTime = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes from now
+      
+      if (selectedDateTime <= now) {
+        newErrors.time = 'Booking time must be in the future';
+      } else if (selectedDateTime < minBookingTime) {
+        newErrors.time = 'Booking must be at least 10 minutes ahead of current time';
+      }
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -95,22 +256,22 @@ const CompanionBookingForm = ({ user }) => {
         date: formData.date,
         time: formData.time,
         location: formData.location,
+        locationDetails: formData.locationDetails,
         specialRequirements: formData.specialRequirements,
         emergencyContact: formData.contactNumber,
         urgency: 'normal' // Default urgency
       };
 
-      const response = await apiClient.post(`${BASE_API_URL}/bookings`, bookingData);
+      const response = await apiClient.post('/bookings', bookingData);
       
       if (response.data.success) {
-        console.log('Booking saved to database:', response.data.data);
         return response.data.data;
       } else {
-        console.error('Failed to save booking:', response.data.message);
+        console.error('Failed to save booking');
         return null;
       }
     } catch (error) {
-      console.error('Error saving booking to database:', error);
+      console.error('Error saving booking to database');
       return null;
     }
   };
@@ -134,7 +295,7 @@ const CompanionBookingForm = ({ user }) => {
           setTimeout(() => scrollToTop(), 100);
         }
       } catch (error) {
-        console.error('Error in booking process:', error);
+        console.error('Error in booking process');
         // Still proceed to step 3 even if database save fails
         setCurrentStep(3);
         setTimeout(() => scrollToTop(), 100);
@@ -177,6 +338,7 @@ Please confirm my booking. Thank you!`;
       date: '',
       time: '',
       location: '',
+      locationDetails: null,
       specialRequirements: '',
       contactName: user?.username || '',
       contactNumber: user?.contactNumber || ''
@@ -268,9 +430,15 @@ Please confirm my booking. Thank you!`;
                   name="time"
                   value={formData.time}
                   onChange={handleChange}
+                  min={formData.date === new Date().toISOString().split('T')[0] ? getMinTime() : undefined}
                   className="form-input"
                 />
                 {errors.time && <span className="error-message">{errors.time}</span>}
+                {!errors.time && formData.time && (
+                  <span className="form-hint">
+                    ⏰ Bookings must be at least 10 minutes ahead of current time
+                  </span>
+                )}
               </div>
             </div>
 
@@ -280,13 +448,10 @@ Please confirm my booking. Thank you!`;
                 <span className="label-text">Where do you need help?</span>
                 <span className="label-required">*</span>
               </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Enter your address or area"
-                className="form-input"
+              <LocationSelector 
+                onLocationSelect={handleLocationSelect}
+                selectedLocation={formData.locationDetails}
+                showAddNew={true}
               />
               {errors.location && <span className="error-message">{errors.location}</span>}
             </div>

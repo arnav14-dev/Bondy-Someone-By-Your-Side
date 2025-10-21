@@ -404,6 +404,17 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* Form Hints */
+.form-hint {
+  color: #6B7280;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 /* Loading Spinner */
 .loading-spinner {
   display: inline-block;

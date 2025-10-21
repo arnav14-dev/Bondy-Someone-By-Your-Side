@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/authPage.css';
 import { BASE_API_URL } from '../config/api.js';
 import apiClient from '../utils/apiClient.js';
 

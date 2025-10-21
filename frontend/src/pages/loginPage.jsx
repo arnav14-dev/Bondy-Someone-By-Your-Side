@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import '../styles/authPage.css'
 import axios from 'axios';
 import { getApiEndpoint } from '../config/api.js';
 
@@ -28,7 +27,6 @@ const LoginPage = () => {
 
   // Validation function
   const validateFormData = () => {
-    console.log('Starting login validation...', formData);
     setValidationError(''); // Clear any previous errors
     
     // Username validation
@@ -47,7 +45,6 @@ const LoginPage = () => {
       return false;
     }
     
-    console.log('Login validation passed!');
     return true;
   };
 
@@ -58,12 +55,10 @@ const LoginPage = () => {
     try {
       // Run validation
       if (!validateFormData()) {
-        console.log('Form validation failed, stopping process');
         setIsLoading(false);
         return;
       }
       
-      console.log('All validations passed, proceeding with login...');
 
       // Call login API
       const loginResponse = await axios.post(getApiEndpoint('/auth/login'), {
@@ -87,10 +82,6 @@ const LoginPage = () => {
         return;
       }
     } catch (error) {
-      console.error('Login error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-
       let errorMessage = 'Login failed. Please try again.';
       
       if (error.response?.data?.message) {
