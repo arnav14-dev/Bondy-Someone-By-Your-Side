@@ -23,15 +23,31 @@ export const createBooking = async (req, res) => {
       }
     }
 
-    // Validate date is not in the past
-    const bookingDate = new Date(bookingData.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Validate date and time are not in the past and at least 10 minutes ahead
+    const bookingDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
+    const now = new Date();
+    const minBookingTime = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes from now
     
-    if (bookingDate < today) {
+    console.log('Booking validation:', {
+      bookingDateTime: bookingDateTime.toISOString(),
+      now: now.toISOString(),
+      minBookingTime: minBookingTime.toISOString(),
+      isPast: bookingDateTime <= now,
+      isLessThanMin: bookingDateTime < minBookingTime
+    });
+    
+    if (bookingDateTime <= now) {
       return res.status(400).json({
         success: false,
-        message: 'Booking date cannot be in the past',
+        message: 'Booking time must be in the future',
+        data: null
+      });
+    }
+    
+    if (bookingDateTime < minBookingTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking must be at least 10 minutes ahead of current time',
         data: null
       });
     }

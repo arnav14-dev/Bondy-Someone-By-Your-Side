@@ -1,11 +1,8 @@
 /* Contact Page Styles */
 .contact-page {
-  min-height: 100vh;
-  padding: 0;
-  margin-top: 0;
+  min-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
-  padding-top: 60px; /* Add padding to clear navbar */
 }
 
 .contact-container {
@@ -16,8 +13,7 @@
   border-radius: 0;
   box-shadow: none;
   overflow: hidden;
-  height: calc(100vh - 60px); /* Full height minus navbar */
-  margin-top: 0;
+  height: calc(100vh - 80px);
 }
 
 /* Questions Section */
@@ -27,24 +23,6 @@
   flex-direction: column;
   padding: 2rem;
   height: 100%;
-}
-
-.contact-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.contact-header h1 {
-  font-size: 2.5rem;
-  color: #2d3748;
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-.contact-header p {
-  font-size: 1.2rem;
-  color: #718096;
-  margin: 0;
 }
 
 .questions-grid {
@@ -101,14 +79,14 @@
 }
 
 .option-btn.chat-option {
-  background: linear-gradient(135deg, #4e6ef2, #6b73ff);
+  background: linear-gradient(135deg, #175c8a, #6b73ff);
   color: white;
   border-color: #4e6ef2;
   font-weight: 600;
 }
 
 .option-btn.chat-option:hover {
-  background: linear-gradient(135deg, #3b5bdb, #5a67d8);
+  background: linear-gradient(135deg, #175c8a, #5a67d8);
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(78, 110, 242, 0.3);
 }
@@ -135,21 +113,21 @@
 .bot-chat-section .chat-messages {
   flex: 1;
   padding: 1rem;
+  padding-bottom: 120px; /* Space for input */
   overflow-y: auto;
-  background: #f0f2f5;
   border-radius: 0;
   margin-bottom: 0;
   max-height: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* Hide scrollbar but keep scrolling functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+  position: relative; /* For absolute positioned scroll button */
 }
 
 .bot-chat-section .chat-messages::-webkit-scrollbar {
-  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+  display: none; 
 }
 
 .question-options {
@@ -365,49 +343,54 @@
 .chat-header {
   background-color: #f2f5f7;
   color: white;
-  padding: 1.5rem 2rem;
+  padding: 0.5rem 2rem;
   display: flex;
   justify-content: space-between;
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.1);
   align-items: center;
+  position: fixed;
+  /* top: 10%; */
+  width: 100%;
+  z-index: 100;
 }
 
 .chat-info h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .status {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   margin-top: 0.5rem;
   font-weight: 500;
 }
 
 .status.connected {
-  color: #68d391;
+  color: #0e87d8;
 }
 
 .status.disconnected {
-  color: #fc8181;
+  color: rgba(196, 33, 33, 0.567);
 }
 
 
 .chat-messages {
   flex: 1;
   padding: 1rem;
+  padding-bottom: 120px; /* Space for input */
   overflow-y: auto;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* Hide scrollbar but keep scrolling functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+  position: relative; /* For absolute positioned scroll button */
 }
 
 .chat-messages::-webkit-scrollbar {
-  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+  display: none; 
 }
 
 .message {
@@ -470,6 +453,10 @@
   gap: 0.75rem;
   align-items: center;
   flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
 }
 
 .chat-input input {
@@ -522,13 +509,13 @@
 @media (max-width: 768px) {
   .contact-page {
     padding: 0;
-    padding-top: 60px; /* Ensure navbar clearance on mobile */
+    padding-top: 0; /* Layout component handles navbar spacing */
     height: 100vh;
   }
   
   .contact-container {
     border-radius: 0;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 80px);
   }
   
   .questions-section {
@@ -570,6 +557,7 @@
   
   .bot-chat-section .chat-messages {
     padding: 0.75rem;
+    padding-bottom: 100px; /* Space for input */
   }
   
   .question-card-message {
@@ -596,6 +584,7 @@
   
   .chat-messages {
     padding: 0.75rem;
+    padding-bottom: 100px; /* Space for input */
   }
   
   .message-content {

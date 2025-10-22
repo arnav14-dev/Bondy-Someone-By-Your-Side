@@ -282,6 +282,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 // Global cache for profile images
 const profileImageCache = new Map();
 const pendingRequests = new Map();
+const retryQueue = new Map(); // For rate-limited requests
 
 const Navbar = ({ user, onLogout, onNavigate }) => {
   const navigate = useNavigate();
@@ -325,6 +326,16 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
       setIsLoadingImage(false);
     }
   }, [user]);
+
+  // Cleanup retry timeouts on unmount
+  useEffect(() => {
+    return () => {
+      retryQueue.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      retryQueue.clear();
+    };
+  }, []);
 
   const scrollToTop = () => {
     // Try multiple scroll methods to ensure it works
@@ -426,6 +437,49 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
     }
   };
 
+  const scheduleRetry = (s3FileName, userId, cacheKey) => {
+    const retryKey = `${userId}-${s3FileName}`;
+    
+    // Don't schedule multiple retries for the same image
+    if (retryQueue.has(retryKey)) {
+      return;
+    }
+    
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const retry = async () => {
+      retryCount++;
+      console.log(`Retrying profile image fetch (attempt ${retryCount}/${maxRetries})`);
+      
+      try {
+        const result = await fetchProfileImage(s3FileName, userId, cacheKey);
+        if (result) {
+          setProfileImageUrl(result);
+          retryQueue.delete(retryKey);
+        } else if (retryCount < maxRetries) {
+          // Schedule next retry with exponential backoff
+          const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+          setTimeout(retry, delay);
+        } else {
+          console.warn('Max retries reached for profile image');
+          retryQueue.delete(retryKey);
+        }
+      } catch (error) {
+        console.error('Retry failed:', error);
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          setTimeout(retry, delay);
+        } else {
+          retryQueue.delete(retryKey);
+        }
+      }
+    };
+    
+    // Initial retry after 5 seconds
+    retryQueue.set(retryKey, setTimeout(retry, 5000));
+  };
+
   const fetchProfileImage = async (s3FileName, userId, cacheKey) => {
     try {
       const controller = new AbortController();
@@ -456,17 +510,27 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
           // Preload the image to ensure it's ready
           const img = new Image();
           img.onload = () => {
+            console.log('Profile image loaded successfully');
           };
           img.onerror = () => {
             console.error('Failed to preload image:', imageUrl);
+            // Remove from cache if image fails to load
+            profileImageCache.delete(cacheKey);
           };
           img.src = imageUrl;
           
           return imageUrl;
         } else {
+          console.warn('No image URL in response:', data);
         }
+      } else if (response.status === 429) {
+        console.warn('Rate limited - too many image requests. Will retry later.');
+        // Schedule retry with exponential backoff
+        scheduleRetry(s3FileName, userId, cacheKey);
+        return null;
       } else {
         const errorText = await response.text();
+        console.error('Failed to fetch profile image:', response.status, errorText);
       }
       
       return null;

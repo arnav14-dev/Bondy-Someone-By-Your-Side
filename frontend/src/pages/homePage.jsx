@@ -11,8 +11,7 @@ import {
   getCachedResponse, 
   setCachedResponse 
 } from '../utils/requestTracker.js';
-import Navbar from '../components/Navbar.jsx';
-import Footer from '../components/Footer.jsx';
+import '../utils/requestTracker.js';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -111,11 +110,6 @@ const HomePage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/';
-  };
-
   const handleBookBondy = () => {
     navigate('/booking');
   };
@@ -156,8 +150,6 @@ const HomePage = () => {
 
   return (
     <div className="homepage">
-      <Navbar user={user} onLogout={handleLogout} />
-      
       <main className="main-content">
         {/* Hero Section */}
         <section className="hero-section" role="banner">
@@ -371,8 +363,6 @@ const HomePage = () => {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 };

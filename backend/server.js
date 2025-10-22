@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import connectDB from './src/utils/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import s3Routes from './src/routes/s3Routes.js';
@@ -15,8 +17,21 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const CHAT_PORT = process.env.CHAT_PORT || 3005;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProduction = NODE_ENV === 'production';
+
+// Create HTTP server for Socket.IO
+const httpServer = createServer();
+const io = new Server(httpServer, {
+  cors: {
+    origin: isProduction 
+      ? process.env.CORS_ORIGIN?.split(',') || ['https://yourdomain.com']
+      : true,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 
 // Security middleware
 app.use(helmet({
@@ -39,7 +54,20 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+// More lenient rate limiting for S3 routes (images)
+const s3Limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Allow more requests for image loading
+  message: {
+    success: false,
+    message: 'Too many image requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api/', limiter);
+app.use('/api/s3', s3Limiter);
 
 // CORS configuration
 const corsOptions = {
@@ -112,23 +140,55 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.id}`);
+  
+  // Handle incoming messages
+  socket.on('message', (data) => {
+    console.log('Message received:', data);
+    
+    // Echo the message back to the client (for now)
+    // In a real app, you'd save to database and broadcast to other users
+    socket.emit('message', {
+      message: `Support: Thank you for your message: "${data.message}". Our team will respond shortly.`,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
+});
+
+// Start servers
 const startServer = async () => {
   try {
     console.log('Connecting to MongoDB...');
     await connectDB();
     console.log('MongoDB connected successfully');
-    console.log(`Starting server on port ${PORT}...`);
-    console.log(`Environment: ${NODE_ENV}`);
     
+    // Start main API server
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`API Server is running on port ${PORT}`);
       console.log(`Local: http://localhost:${PORT}`);
       if (!isProduction) {
         console.log(`Network: http://192.168.0.100:${PORT}`);
         console.log(`Access from other devices: http://192.168.0.100:${PORT}`);
       }
     });
+    
+    // Start Socket.IO server
+    httpServer.listen(CHAT_PORT, '0.0.0.0', () => {
+      console.log(`Chat Server is running on port ${CHAT_PORT}`);
+      console.log(`Socket.IO: http://localhost:${CHAT_PORT}`);
+      if (!isProduction) {
+        console.log(`Network Chat: http://192.168.0.100:${CHAT_PORT}`);
+      }
+    });
+    
+    console.log(`Environment: ${NODE_ENV}`);
   } catch (error) {
     console.error('Error starting server:', error.message);
     process.exit(1);

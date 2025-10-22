@@ -5,11 +5,10 @@
 .booking-page {
   min-height: 100vh;
   background: #F9FAFC;
-  padding-top: 11vh; /* Account for fixed navbar */
 }
 
-.main-content {
-  min-height: calc(100vh - 11vh);
+.booking-main-content {
+  min-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
 }
@@ -59,7 +58,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .booking-page {
-    padding-top: 12vh; /* More padding on mobile */
+    padding-top: 0; /* Layout component handles navbar spacing */
   }
   
   .booking-hero {
@@ -77,7 +76,7 @@
 
 @media (max-width: 480px) {
   .booking-page {
-    padding-top: 13vh; /* Even more padding on small screens */
+    padding-top: 0; /* Layout component handles navbar spacing */
   }
   
   .booking-hero {

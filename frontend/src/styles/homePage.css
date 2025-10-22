@@ -3,10 +3,9 @@
 
 /* Homepage Styles */
 .homepage {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--bg-warm) 0%, #f0f2ff 100%);
 }
 
 .main-content {
@@ -23,11 +22,10 @@
 
 /* Hero Section - Modern Redesign */
 .hero-section {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 6rem 0;
+  padding: 0rem 0;
   position: relative;
   overflow: hidden;
-  min-height: 90vh;
+  min-height: 70vh;
   display: flex;
   align-items: center;
 }
@@ -39,8 +37,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 20% 50%, rgba(78, 110, 242, 0.05) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -633,13 +629,14 @@
 /* Small mobile styles (up to 480px) */
 @media (max-width: 480px) {
   .hero-section {
-    padding: 3rem 0;
-    min-height: 80vh;
+    padding: 1rem 0;
+    min-height: auto;
   }
   
   .hero-container {
     padding: 0 1rem;
-    gap: 2rem;
+    gap: 1.5rem;
+    min-height: auto;
   }
   
   .hero-title {
@@ -668,7 +665,7 @@
 /* Mobile styles (up to 768px) */
 @media (max-width: 768px) {
   .homepage {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -676,26 +673,25 @@
   }
   
   .hero-section {
-    padding: 0;
-    min-height: 85vh;
+    padding: 1rem 0;
+    min-height: auto;
   }
   
   .hero-container {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2rem;
     text-align: center;
-    padding: 0 1.5rem;
+    padding: 0 1rem;
     min-height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* background-color: rgb(187, 192, 187); */
   }
   
   .hero-content {
     /* align-items: center; */
-    padding: 1rem 0;
+    padding: 0rem 1rem;
     order: 1;
     height: 100%;
     width: 100%;  
@@ -705,7 +701,7 @@
     height: 85%;
     justify-content: center;
     align-items: center;
-    padding: 2rem;
+    padding: 0rem 1rem;
   }
 
   .hero-content {
@@ -870,8 +866,8 @@
 /* Tablet styles (769px to 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
   .hero-section {
-    padding: 5rem 0;
-    min-height: 85vh;
+    padding: 0rem 0;
+    min-height: 80vh;
   }
   
   .hero-container {
@@ -895,7 +891,7 @@
 /* Desktop styles (1025px+) */
 @media (min-width: 1025px) {
   .homepage {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -903,8 +899,8 @@
   }
   
   .hero-section {
-    padding: 6rem 0;
-    min-height: 90vh;
+    padding: 0rem 0;
+    min-height: 80vh;
   }
   
   .hero-container {

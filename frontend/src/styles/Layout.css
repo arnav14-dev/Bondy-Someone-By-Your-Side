@@ -1,0 +1,25 @@
+/* Layout Component Styles */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 80px; /* Account for fixed navbar height */
+  min-height: calc(100vh - 80px);
+}
+
+/* Ensure content doesn't get hidden behind navbar */
+.main-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 50px; /* Reduced mobile padding */
+  }
+}

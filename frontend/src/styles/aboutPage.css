@@ -5,7 +5,6 @@
 .about-page {
   min-height: 100vh;
   background: #F9FAFC;
-  padding-top: 11vh; /* Account for fixed navbar */
   width: 100%;
 }
 
@@ -13,7 +12,7 @@
 /* Hero Section */
 .about-hero {
   color: white;
-  padding: 0;
+  padding: 4rem 0;
 }
 .about-container {
   max-width: 95%;
@@ -312,7 +311,7 @@
 /* Base mobile styles (up to 480px) */
 @media (max-width: 480px) {
   .about-page {
-    padding-top: 80px;
+    padding-top: 0;
     -webkit-tap-highlight-color: transparent;
   }
   
@@ -461,7 +460,7 @@
 /* Small tablets and large phones (481px to 768px) */
 @media (min-width: 481px) and (max-width: 768px) {
   .about-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -604,7 +603,7 @@
 /* Tablets (769px to 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
   .about-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -745,7 +744,7 @@
 /* Desktop and larger (1025px+) */
 @media (min-width: 1025px) {
   .about-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {

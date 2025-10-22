@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
-import Navbar from "./components/Navbar";
+import Layout from "./components/Layout";
 import AuthPage from './pages/AuthPage.jsx';
 import LoginPage from './pages/loginPage.jsx';
 import HomePage from './pages/homePage.jsx';
@@ -92,44 +92,59 @@ function App() {
 
   return (
     <>
-      {isLoggedIn && <Navbar user={user} onLogout={handleLogout} onNavigate={handleNavigation} />}
       <Routes>
         <Route path='/' element={<AuthPage />} />
         <Route path='/login' element={<AuthPage />} />
         <Route path='/home' element={
           <ProtectedRoute>
-            <HomePage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+              <HomePage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path='/booking' element={
           <ProtectedRoute>
-            <BookingPage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+              <BookingPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path='/bookings' element={
           <ProtectedRoute>
-            <BookingsPage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+              <BookingsPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path='/profile' element={
           <ProtectedRoute>
-            <ProfilePage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+              <ProfilePage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path='/manage-locations' element={
           <ProtectedRoute>
-            <LocationManagementPage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+              <LocationManagementPage />
+            </Layout>
           </ProtectedRoute>
         } />
-        <Route path='/about' element={<AboutPage />} />
+        <Route path='/about' element={
+          <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation}>
+            <AboutPage />
+          </Layout>
+        } />
         <Route path='/contact' element={
           <ProtectedRoute>
-            <ContactPage />
+            <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation} showFooter={false}>
+              <ContactPage />
+            </Layout>
           </ProtectedRoute>
         } />
         {/* Fallback route */}
         <Route path='*' element={
-          <div style={{ marginTop: isLoggedIn ? "80px" : "0", padding: "2rem" }}>
+          <div style={{ padding: "2rem" }}>
             <h1>Page Not Found</h1>
             <p>The page you're looking for doesn't exist.</p>
             <button onClick={() => navigate('/home')} style={{ 

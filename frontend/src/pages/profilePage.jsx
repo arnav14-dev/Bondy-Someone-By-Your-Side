@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import '../styles/profilePage.css';
 import apiClient from '../utils/apiClient.js';
 import { BASE_API_URL } from '../config/api.js';
-import Navbar from '../components/Navbar.jsx';
 import Footer from '../components/Footer.jsx';
 
 const ProfilePage = () => {
@@ -130,23 +129,19 @@ const ProfilePage = () => {
   if (loading) {
     return (
       <div className="profile-page">
-        <Navbar user={user} onLogout={handleLogout} />
         <main className="main-content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading your profile...</p>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="profile-page">
-      <Navbar user={user} onLogout={handleLogout} />
-      
-      <main className="main-content">
+      <main className="profile-main-content">
         {/* Header Section */}
         <section className="profile-header">
           <div className="container">
@@ -327,8 +322,6 @@ const ProfilePage = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

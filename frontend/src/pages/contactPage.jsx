@@ -3,9 +3,16 @@ import '../styles/contactPage.css';
 import io from 'socket.io-client';
 
 const ContactPage = () => {
-  // Get user data from localStorage (simple approach)
+  // Get user data from localStorage
   const [user, setUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentStep, setCurrentStep] = useState('questions'); // 'questions' or 'chat'
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const initialMessageAdded = useRef(false);
+  const chatMessagesRef = useRef(null);
 
   // Load user data on component mount
   useEffect(() => {
@@ -14,19 +21,11 @@ const ContactPage = () => {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        setIsLoggedIn(true);
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     }
   }, []);
-  const [currentStep, setCurrentStep] = useState('questions'); // 'questions' or 'chat'
-  const [selectedQuestion, setSelectedQuestion] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const initialMessageAdded = useRef(false);
 
   // Single card with 3 main questions + live chat option
   const mainQuestion = {
@@ -39,50 +38,17 @@ const ContactPage = () => {
     ]
   };
 
-  // Additional questions for bot responses
-  const additionalQuestions = {
-    "I need help with booking process": {
-      question: "Booking Process Help",
-      options: [
-        "Step-by-step booking guide",
-        "Troubleshooting booking issues",
-        "Account setup help",
-        "Chat with Customer Executive"
-      ]
-    },
-    "I want to know about available services": {
-      question: "Available Services",
-      options: [
-        "Technology Help details",
-        "Social Outings information", 
-        "Administrative Tasks info",
-        "Chat with Customer Executive"
-      ]
-    },
-    "I have payment issues": {
-      question: "Payment Support",
-      options: [
-        "Payment method problems",
-        "Billing questions",
-        "Refund requests",
-        "Chat with Customer Executive"
-      ]
-    }
-  };
-
   // Initialize socket connection
   useEffect(() => {
     if (currentStep === 'chat') {
       const newSocket = io('http://localhost:3005');
       
       newSocket.on('connect', () => {
-        console.log('Connected to chat server');
         setIsConnected(true);
         addMessage('Customer Support', 'Hello! How can I help you today?', 'received');
       });
       
       newSocket.on('disconnect', () => {
-        console.log('Disconnected from chat server');
         setIsConnected(false);
         // Clear messages when disconnected
         setMessages([]);
@@ -90,6 +56,20 @@ const ContactPage = () => {
 
       newSocket.on('message', (data) => {
         addMessage('Customer Support', data.message, 'received');
+        
+        // Aggressive scroll when admin message is received
+        setTimeout(() => {
+          scrollToBottom();
+        }, 10);
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
+        setTimeout(() => {
+          scrollToBottom();
+        }, 300);
+        setTimeout(() => {
+          scrollToBottom();
+        }, 600);
       });
 
       setSocket(newSocket);
@@ -126,9 +106,88 @@ const ContactPage = () => {
     setMessages(prev => [...prev, message]);
   };
 
-  const handleQuestionSelect = (option) => {
-    setSelectedQuestion({ option });
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    // Multiple attempts with different delays to ensure it works
+    setTimeout(() => {
+      scrollToBottom();
+    }, 10);
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    setTimeout(() => {
+      scrollToBottom();
+    }, 300);
+    setTimeout(() => {
+      scrollToBottom();
+    }, 600);
+  }, [messages]);
+
+  // Check if user is at bottom of chat
+  const checkIfAtBottom = () => {
+    const chatMessages = chatMessagesRef.current || 
+                        document.querySelector('.chat-messages') ||
+                        document.querySelector('.bot-chat-section .chat-messages');
     
+    if (chatMessages) {
+      const threshold = 100; // pixels from bottom
+      const isAtBottom = chatMessages.scrollTop + chatMessages.clientHeight >= 
+                       chatMessages.scrollHeight - threshold;
+      setIsAtBottom(isAtBottom);
+    }
+  };
+
+  // Enhanced scroll to bottom function
+  const scrollToBottom = () => {
+    // Try multiple selectors to find the chat container
+    const chatMessages = chatMessagesRef.current || 
+                        document.querySelector('.chat-messages') ||
+                        document.querySelector('.bot-chat-section .chat-messages');
+    
+    if (chatMessages) {
+      // Calculate the exact scroll position needed
+      const scrollHeight = chatMessages.scrollHeight;
+      const clientHeight = chatMessages.clientHeight;
+      const maxScroll = scrollHeight - clientHeight;
+      
+      // Method 1: Scroll to absolute maximum with extra buffer
+      chatMessages.scrollTop = maxScroll + 100; // Extra 100px buffer
+      
+      // Method 2: Smooth scroll to maximum
+      chatMessages.scrollTo({
+        top: maxScroll + 100,
+        behavior: 'smooth'
+      });
+      
+      // Method 3: Scroll last message into view with extra margin
+      const lastMessage = chatMessages.lastElementChild;
+      if (lastMessage) {
+        lastMessage.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'end',
+          inline: 'nearest'
+        });
+        
+        // Additional scroll after scrollIntoView
+        setTimeout(() => {
+          chatMessages.scrollTop = chatMessages.scrollHeight + 100;
+        }, 300);
+      }
+      
+      // Method 4: Force multiple updates with increasing offsets
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight + 50;
+      }, 50);
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight + 100;
+      }, 150);
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight + 150;
+      }, 300);
+    }
+  };
+
+  const handleQuestionSelect = (option) => {
     // Add user's selection to chat
     addMessage('You', option, 'sent');
     
@@ -139,11 +198,15 @@ const ContactPage = () => {
       // Small delay to make it feel more natural
       setTimeout(() => {
         setCurrentStep('chat');
+        // Scroll to bottom after transitioning to chat
+        setTimeout(() => {
+          scrollToBottom();
+        }, 200);
       }, 1500);
     } else {
       // Instant bot responses with typing effect
       const responses = {
-        "I need help with booking process": "📱 To book a Bondy service:\n\n1. Go to 'Book Bondy' page\n2. Select your service type\n3. Choose date & time\n4. Fill in your details\n\nIt's that simple! Takes just 2-3 minutes. 😊",
+        "I need help with booking process": "To book a Bondy service:\n\n1. Go to 'Book Bondy' page\n2. Select your service type\n3. Choose date & time\n4. Fill in your details\n\nIt's that simple! Takes just 2-3 minutes. 😊",
         "I want to know about available services": "🎯 We offer 3 main services:\n\n• Technology Help - Phone/computer assistance\n• Social Outings - Companionship for activities\n• Administrative Tasks - Paperwork & errands\n\nEach service is designed for elderly users' daily needs!",
         "I have payment issues": "💳 We accept multiple payment methods:\n\n• Credit/Debit cards\n• UPI payments\n• Net banking\n\nIf you're having issues, please check your payment method or contact our support team for immediate assistance."
       };
@@ -157,6 +220,10 @@ const ContactPage = () => {
           // Remove typing indicator and add actual response
           setMessages(prev => prev.slice(0, -1));
           addMessage('Bondy Bot', response, 'received');
+          // Scroll to bottom after bot response
+          setTimeout(() => {
+            scrollToBottom();
+          }, 100);
         }, 1000);
       }
     }
@@ -171,6 +238,20 @@ const ContactPage = () => {
         username: user?.username || 'Guest'
       });
       setNewMessage('');
+      
+      // Multiple aggressive attempts to scroll to bottom
+      setTimeout(() => {
+        scrollToBottom();
+      }, 10);
+      setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      setTimeout(() => {
+        scrollToBottom();
+      }, 150);
+      setTimeout(() => {
+        scrollToBottom();
+      }, 300);
     }
   };
 
@@ -181,20 +262,40 @@ const ContactPage = () => {
     }
   };
 
+  const ScrollToBottomButton = () => (
+    !isAtBottom && (
+      <button 
+        className="scroll-to-bottom-btn"
+        onClick={scrollToBottom}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          background: '#4e6ef2',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: '50px',
+          height: '50px',
+          cursor: 'pointer',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+          zIndex: 10
+        }}
+      >
+        ↓
+      </button>
+    )
+  );
+
 
   return (
     <div className="contact-page">
       <div className="contact-container">
         {currentStep === 'questions' ? (
           <div className="questions-section">
-            <div className="contact-header">
-              <h1>Bondy Support</h1>
-              <p>How can we help you today?</p>
-            </div>
-
             {/* Show chat interface with bot messages */}
             <div className="bot-chat-section">
-              <div className="chat-messages">
+              <div className="chat-messages" ref={chatMessagesRef} onScroll={checkIfAtBottom}>
                 {messages.map((message) => (
                   <div key={message.id} className={`message ${message.type}`}>
                     <div className="message-content">
@@ -233,6 +334,8 @@ const ContactPage = () => {
                     </div>
                   </div>
                 )}
+                
+                <ScrollToBottomButton />
               </div>
             </div>
           </div>
@@ -242,12 +345,12 @@ const ContactPage = () => {
               <div className="chat-info">
                 <h3>Bondy Chat Support</h3>
                 <div className={`status ${isConnected ? 'connected' : 'disconnected'}`}>
-                  {isConnected ? '🟢 Online' : '🔴 Offline'}
+                  {isConnected ? 'Online' : 'Offline'}
                 </div>
               </div>
             </div>
 
-            <div className="chat-messages">
+            <div className="chat-messages" ref={chatMessagesRef} onScroll={checkIfAtBottom}>
               {messages.map((message) => (
                 <div key={message.id} className={`message ${message.type}`}>
                   <div className="message-content">
@@ -257,6 +360,8 @@ const ContactPage = () => {
                   </div>
                 </div>
               ))}
+              
+              <ScrollToBottomButton />
             </div>
 
             <div className="chat-input">

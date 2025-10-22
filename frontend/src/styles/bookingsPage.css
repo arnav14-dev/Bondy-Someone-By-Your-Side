@@ -22,15 +22,14 @@
 
 /* Bookings Page Styles */
 .bookings-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   background: var(--bg-secondary);
-  padding-top: 80px; /* Account for fixed navbar */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
-.main-content {
-  min-height: calc(100vh - 11vh);
+.bookings-main-content {
+  min-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
 }
@@ -501,7 +500,7 @@
 /* Base mobile styles (up to 480px) */
 @media (max-width: 480px) {
   .bookings-page {
-    padding-top: 80px; /* Fixed navbar height */
+    padding-top: 0; /* Layout component handles navbar spacing */
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
   }
   
@@ -752,7 +751,7 @@
 /* Small tablets and large phones (481px to 768px) */
 @media (min-width: 481px) and (max-width: 768px) {
   .bookings-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -883,7 +882,7 @@
 /* Tablets (769px to 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
   .bookings-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {
@@ -989,7 +988,7 @@
 /* Desktop and larger (1025px+) */
 @media (min-width: 1025px) {
   .bookings-page {
-    padding-top: 80px;
+    padding-top: 0;
   }
   
   .container {

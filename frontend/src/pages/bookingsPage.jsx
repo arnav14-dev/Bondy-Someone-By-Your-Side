@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import '../styles/bookingsPage.css';
 import apiClient from '../utils/apiClient.js';
 import { getApiEndpoint } from '../config/api.js';
-import Navbar from '../components/Navbar.jsx';
-import Footer from '../components/Footer.jsx';
 
 const BookingsPage = () => {
   const [bookings, setBookings] = useState([]);
@@ -239,23 +237,19 @@ const BookingsPage = () => {
   if (loading) {
     return (
       <div className="bookings-page">
-        <Navbar user={user} onLogout={handleLogout} />
         <main className="main-content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading your bookings...</p>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="bookings-page">
-      <Navbar user={user} onLogout={handleLogout} />
-      
-      <main className="main-content">
+      <main className="bookings-main-content">
 
 
         {/* Main Content Section */}
@@ -450,8 +444,6 @@ const BookingsPage = () => {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 };
