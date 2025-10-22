@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start Development Servers Script
-echo "Starting Gen-Link Development Environment..."
+echo "Starting Bondy-Someone-By-Your-Side Development Environment..."
 
 # Function to check if a port is in use
 check_port() {

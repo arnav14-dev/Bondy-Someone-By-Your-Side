@@ -1,10 +1,10 @@
-# Gen-Link
+# Bondy-Someone-By-Your-Side
 
 A comprehensive companion booking platform that connects users with trusted companions for various services and support needs.
 
 ## Overview
 
-Gen-Link is a full-stack web application designed to facilitate secure and reliable companion bookings. The platform provides an intuitive interface for users to book companions for various services, manage their bookings, and maintain their profiles with advanced security features.
+Bondy-Someone-By-Your-Side is a full-stack web application designed to facilitate secure and reliable companion bookings. The platform provides an intuitive interface for users to book companions for various services, manage their bookings, and maintain their profiles with advanced security features.
 
 ## Key Features
 
@@ -56,7 +56,7 @@ Gen-Link is a full-stack web application designed to facilitate secure and relia
 ## Project Structure
 
 ```
-gen-link/
+bondy-someone-by-your-side/
 ├── backend/                 # Backend API server
 │   ├── src/
 │   │   ├── controllers/     # Route controllers
@@ -167,8 +167,8 @@ gen-link/
 ### Backend (.env)
 ```env
 # Database
-MONGODB_URI=mongodb://localhost:27017/gen-link
-DB_NAME=gen-link
+MONGODB_URI=mongodb://localhost:27017/bondy-someone-by-your-side
+DB_NAME=bondy-someone-by-your-side
 
 # Server
 PORT=3001
@@ -200,7 +200,7 @@ VITE_API_PORT=3001
 VITE_API_PROTOCOL=http
 
 # App Configuration
-VITE_APP_NAME=Gen-Link
+VITE_APP_NAME=Bondy-Someone-By-Your-Side
 VITE_APP_VERSION=1.0.0
 
 # External Services

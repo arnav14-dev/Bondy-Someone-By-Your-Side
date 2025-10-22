@@ -39,7 +39,7 @@ export const ENV_CONFIG = {
   isDevelopment: import.meta.env.DEV,
   isProduction: import.meta.env.PROD,
   apiUrl: BASE_API_URL,
-  appName: import.meta.env.VITE_APP_NAME || 'Gen-Link',
+  appName: import.meta.env.VITE_APP_NAME || 'Bondy-Someone-By-Your-Side',
   version: import.meta.env.VITE_APP_VERSION || '1.0.0'
 };
 

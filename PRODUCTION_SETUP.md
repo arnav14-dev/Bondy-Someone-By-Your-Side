@@ -1,6 +1,6 @@
-# Gen-Link Production Setup Guide
+# Bondy-Someone-By-Your-Side Production Setup Guide
 
-This guide will help you deploy Gen-Link to production with all necessary security and performance optimizations.
+This guide will help you deploy Bondy-Someone-By-Your-Side to production with all necessary security and performance optimizations.
 
 ## 🚀 Quick Start
 
@@ -34,8 +34,8 @@ This guide will help you deploy Gen-Link to production with all necessary securi
 
 ```env
 # Database
-MONGODB_URI=mongodb://localhost:27017/gen-link-prod
-DB_NAME=gen-link-prod
+MONGODB_URI=mongodb://localhost:27017/bondy-someone-by-your-side-prod
+DB_NAME=bondy-someone-by-your-side-prod
 
 # Server
 PORT=3001
@@ -71,7 +71,7 @@ VITE_API_PORT=443
 VITE_API_PROTOCOL=https
 
 # App Configuration
-VITE_APP_NAME=Gen-Link
+VITE_APP_NAME=Bondy-Someone-By-Your-Side
 VITE_APP_VERSION=1.0.0
 
 # External Services

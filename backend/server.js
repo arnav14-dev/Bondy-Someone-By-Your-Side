@@ -89,7 +89,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ message: 'Gen-Link Backend API is running!' });
+  res.json({ message: 'Bondy-Someone-By-Your-Side Backend API is running!' });
 });
 
 

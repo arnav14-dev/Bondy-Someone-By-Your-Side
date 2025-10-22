@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Production Build Script for Gen-Link
+# Production Build Script for Bondy-Someone-By-Your-Side
 # This script builds both frontend and backend for production deployment
 
 set -e  # Exit on any error
@@ -85,9 +85,9 @@ cp -r frontend/dist production/frontend
 print_status "Creating production package.json..."
 cat > production/package.json << EOF
 {
-  "name": "gen-link-production",
+  "name": "bondy-someone-by-your-side-production",
   "version": "1.0.0",
-  "description": "Gen-Link Production Build",
+  "description": "Bondy-Someone-By-Your-Side Production Build",
   "main": "backend/server.js",
   "scripts": {
     "start": "cd backend && npm start",
@@ -104,7 +104,7 @@ EOF
 # Create production README
 print_status "Creating production README..."
 cat > production/README.md << EOF
-# Gen-Link Production Build
+# Bondy-Someone-By-Your-Side Production Build
 
 ## Prerequisites
 - Node.js >= 18.0.0
