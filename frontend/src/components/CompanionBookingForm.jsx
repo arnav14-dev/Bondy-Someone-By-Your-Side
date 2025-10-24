@@ -3,10 +3,15 @@ import '../styles/CompanionBookingForm.css';
 import { BASE_API_URL } from '../config/api.js';
 import apiClient from '../utils/apiClient.js';
 import LocationSelector from './LocationSelector.jsx';
+import PaymentPage from './PaymentPage.jsx';
+import SubServiceModal from './SubServiceModal.jsx';
 
 const CompanionBookingForm = ({ user }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedBooking, setSavedBooking] = useState(null);
+  const [showSubServiceModal, setShowSubServiceModal] = useState(false);
+  const [selectedSubServices, setSelectedSubServices] = useState([]);
   const [formData, setFormData] = useState({
     // Step 1: Service Details
     serviceCategory: '',
@@ -49,12 +54,25 @@ const CompanionBookingForm = ({ user }) => {
           }));
         }
       } catch (error) {
-        console.log('No recent location found or error loading:', error);
+        // Silently handle 404 errors - user just needs to add a location
+        if (error.response?.status !== 404) {
+          console.log('Error loading recent location:', error);
+        }
       }
     };
 
     loadRecentLocation();
   }, []);
+
+
+  // Sub-service configurations for each main service
+  const subServiceConfig = {
+    'household': ['Meal Service', 'Event Setup', 'Home Organization', 'Kitchenware Cleaning'],
+    'elderly-care': ['Personal Care', 'Walk Assist'],
+    'shopping': ['Grocery Shopping (Upto 10kg)', 'General Errands (Within 5km)'],
+    'medical': ['Doctor Visits', 'Pharmacy Trips', 'Night Stay', 'Therapy Sessions', 'Emergency Care'],
+    'other': ['Pick-up & Drop Off (Distance Basis)', 'Playground Supervision (Hourly basis)', 'Baby Sitting (Hourly basis)'],
+  };
 
   const serviceCategories = [
     { 
@@ -82,7 +100,7 @@ const CompanionBookingForm = ({ user }) => {
     },
     { 
       value: 'medical', 
-      label: 'Medical Appointments', 
+      label: 'Medical Support', 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 21h18"/>
@@ -97,37 +115,29 @@ const CompanionBookingForm = ({ user }) => {
     },
     { 
       value: 'other', 
-      label: 'Technology Help', 
+      label: 'Kid\'s Escort & Care', 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      )
-    },
-    { 
-      value: 'social', 
-      label: 'Social Outings', 
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2Z"/>
+          <path d="M21 9V7L15 5.5V7L21 9Z"/>
+          <path d="M3 9V7L9 5.5V7L3 9Z"/>
+          <path d="M12 8C8.7 8 6 10.7 6 14V16H18V14C18 10.7 15.3 8 12 8Z"/>
+          <path d="M8 20H16"/>
+          <path d="M10 18V20"/>
+          <path d="M14 18V20"/>
+          <circle cx="9" cy="12" r="1"/>
+          <circle cx="15" cy="12" r="1"/>
+          <path d="M12 13V15"/>
         </svg>
       )
     },
     { 
       value: 'household', 
-      label: 'Administrative Tasks', 
+      label: 'Household Assistant', 
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10,9 9,9 8,9"/>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
         </svg>
       )
     }
@@ -155,6 +165,28 @@ const CompanionBookingForm = ({ user }) => {
     if (name === 'date' || name === 'time') {
       validateDateTime(newFormData);
     }
+  };
+
+  const handleServiceCategoryChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      serviceCategory: value
+    }));
+    
+    // Check if this service has sub-services
+    if (subServiceConfig[value]) {
+      setShowSubServiceModal(true);
+    } else {
+      setSelectedSubServices([]);
+    }
+  };
+
+  const handleSubServiceConfirm = (subServices) => {
+    setSelectedSubServices(subServices);
+    setFormData(prev => ({
+      ...prev,
+      subServices: subServices
+    }));
   };
 
   // Real-time validation for date and time
@@ -200,13 +232,19 @@ const CompanionBookingForm = ({ user }) => {
     }
   };
 
-
   const validateStep1 = () => {
     const newErrors = {};
     if (!formData.serviceCategory) newErrors.serviceCategory = 'Please select a service category';
     if (!formData.date) newErrors.date = 'Please select a date';
     if (!formData.time) newErrors.time = 'Please select a time';
     if (!formData.locationDetails) newErrors.location = 'Please select a location';
+    
+    // Validate sub-services - user must select at least one if the service has sub-services
+    if (formData.serviceCategory && subServiceConfig[formData.serviceCategory]) {
+      if (!selectedSubServices || selectedSubServices.length === 0) {
+        newErrors.subServices = 'Please select at least one sub-service';
+      }
+    }
     
     // Validate date and time are not in the past and at least 10 minutes ahead
     if (formData.date && formData.time) {
@@ -258,7 +296,6 @@ const CompanionBookingForm = ({ user }) => {
         location: formData.location,
         locationDetails: formData.locationDetails,
         specialRequirements: formData.specialRequirements,
-        emergencyContact: formData.contactNumber,
         urgency: 'normal' // Default urgency
       };
 
@@ -283,10 +320,11 @@ const CompanionBookingForm = ({ user }) => {
     } else if (currentStep === 2 && validateStep2()) {
       setIsSubmitting(true);
       try {
-        // Save to database first, then proceed to step 3
-        const savedBooking = await saveBookingToDatabase();
-        if (savedBooking) {
-          setCurrentStep(3);
+        // Save to database first, then proceed to payment
+        const booking = await saveBookingToDatabase();
+        if (booking) {
+          setSavedBooking(booking);
+          setCurrentStep(3); // Go to payment step
           setTimeout(() => scrollToTop(), 100);
         } else {
           // If database save fails, still proceed to step 3 but show warning
@@ -310,6 +348,17 @@ const CompanionBookingForm = ({ user }) => {
       setCurrentStep(currentStep - 1);
       setTimeout(() => scrollToTop(), 100);
     }
+  };
+
+  const handlePaymentComplete = (paymentDetails) => {
+    // Payment completed, proceed to success step
+    setCurrentStep(4);
+    setTimeout(() => scrollToTop(), 100);
+  };
+
+  const handleBackToBooking = () => {
+    setCurrentStep(2);
+    setTimeout(() => scrollToTop(), 100);
   };
 
   const handleWhatsAppRedirect = () => {
@@ -343,6 +392,7 @@ Please confirm my booking. Thank you!`;
       contactName: user?.username || '',
       contactNumber: user?.contactNumber || ''
     });
+    setSavedBooking(null);
     setCurrentStep(1);
     setErrors({});
     setTimeout(() => scrollToTop(), 100);
@@ -368,6 +418,10 @@ Please confirm my booking. Thank you!`;
           </div>
           <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
             <span className="step-number">3</span>
+            <span className="step-label">Payment</span>
+          </div>
+          <div className={`step ${currentStep >= 4 ? 'active' : ''}`}>
+            <span className="step-number">4</span>
             <span className="step-label">Confirm</span>
           </div>
         </div>
@@ -389,7 +443,7 @@ Please confirm my booking. Thank you!`;
                       name="serviceCategory"
                       value={category.value}
                       checked={formData.serviceCategory === category.value}
-                      onChange={handleChange}
+                      onChange={(e) => handleServiceCategoryChange(e.target.value)}
                       className="service-radio"
                     />
                     <div className="service-card">
@@ -401,6 +455,29 @@ Please confirm my booking. Thank you!`;
               </div>
               {errors.serviceCategory && <span className="error-message">{errors.serviceCategory}</span>}
             </div>
+
+            {/* Selected Sub-Services Display */}
+            {selectedSubServices.length > 0 && (
+              <div className="form-section">
+                <label className="form-label">
+                  <span className="label-text">Selected Sub-Services</span>
+                </label>
+                <div className="sub-services-display">
+                  {selectedSubServices.map((subService, index) => (
+                    <span key={index} className="sub-service-tag">
+                      {subService}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Services Error Display */}
+            {errors.subServices && (
+              <div className="form-section">
+                <span className="error-message">{errors.subServices}</span>
+              </div>
+            )}
 
             {/* Date, Time, Location */}
             <div className="form-row">
@@ -442,7 +519,7 @@ Please confirm my booking. Thank you!`;
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location Details */}
             <div className="form-section">
               <label className="form-label">
                 <span className="label-text">Where do you need help?</span>
@@ -516,12 +593,21 @@ Please confirm my booking. Thank you!`;
           </div>
         )}
 
-        {/* Step 3: Success & WhatsApp Handoff */}
-        {currentStep === 3 && (
+        {/* Step 3: Payment */}
+        {currentStep === 3 && savedBooking && (
+          <PaymentPage
+            booking={savedBooking}
+            onPaymentComplete={handlePaymentComplete}
+            onBack={handleBackToBooking}
+          />
+        )}
+
+        {/* Step 4: Success & WhatsApp Handoff */}
+        {currentStep === 4 && (
           <div className="form-step success-step">
             <div className="success-content">
               <div className="success-icon">✅</div>
-              <h3 className="success-title">3. Your request is submitted!</h3>
+              <h3 className="success-title">4. Your request is submitted!</h3>
               <p className="success-message">
                 Thank you! We have received your request and are currently finding the perfect verified companion for you. Our matching process is personal to ensure the best fit.
               </p>
@@ -572,14 +658,14 @@ Please confirm my booking. Thank you!`;
                   Saving...
                 </>
               ) : (
-                currentStep === 1 ? 'Next →' : 'Submit →'
+                currentStep === 1 ? 'Next →' : 'Continue to Payment →'
               )}
             </button>
           </div>
         )}
 
-        {/* Reset Button for Step 3 */}
-        {currentStep === 3 && (
+        {/* Reset Button for Step 4 */}
+        {currentStep === 4 && (
           <div className="form-actions">
             <button
               type="button"
@@ -591,6 +677,15 @@ Please confirm my booking. Thank you!`;
           </div>
         )}
       </div>
+
+      {/* Sub-Service Modal */}
+      <SubServiceModal
+        isOpen={showSubServiceModal}
+        onClose={() => setShowSubServiceModal(false)}
+        onConfirm={handleSubServiceConfirm}
+        serviceName={serviceCategories.find(cat => cat.value === formData.serviceCategory)?.label || 'Service'}
+        subServices={subServiceConfig[formData.serviceCategory] || []}
+      />
     </div>
   );
 };

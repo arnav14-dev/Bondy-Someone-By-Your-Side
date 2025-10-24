@@ -29,8 +29,6 @@ const AuthPage = () => {
     username: '',
     password: '',
     contactNumber: '',
-    profilePicture: null,
-    profilePictureFile: null,
   });
   const [errors, setErrors] = useState({});
   const [placeholderErrors, setPlaceholderErrors] = useState({});
@@ -64,33 +62,24 @@ const AuthPage = () => {
 
   const steps = [
     { id: 1, title: isLogin ? 'Login' : 'Account Details', description: isLogin ? 'Enter your credentials' : 'Basic information' },
-    { id: 2, title: 'Profile Picture', description: 'Add your photo' },
-    { id: 3, title: 'Complete', description: 'Review and finish' },
+    { id: 2, title: 'Complete', description: 'Review and finish' },
   ];
 
   const handleInputChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
 
-    if (files && files[0]) {
+    // For contact number, only allow digits
+    if (name === 'contactNumber') {
+      const digitsOnly = value.replace(/\D/g, '');
       setFormData(prev => ({
         ...prev,
-        [name]: files[0],
-        [`${name}File`]: files[0]
+        [name]: digitsOnly
       }));
     } else {
-      // For contact number, only allow digits
-      if (name === 'contactNumber') {
-        const digitsOnly = value.replace(/\D/g, '');
-        setFormData(prev => ({
-          ...prev,
-          [name]: digitsOnly
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value
-        }));
-      }
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
 
     // Clear error when user starts typing
@@ -161,10 +150,7 @@ const AuthPage = () => {
 
     // Additional validation before submission
     if (!isLogin) {
-      if (!formData.profilePictureFile) {
-        toast.error('Please upload a profile picture');
-        return;
-      }
+      // Profile picture validation removed
     }
 
     setIsLoading(true);
@@ -195,7 +181,9 @@ const AuthPage = () => {
         const response = await axios.post(getApiEndpoint('/auth/login'), validatedData);
 
         if (response.data.success) {
-          localStorage.setItem('currentUser', JSON.stringify(response.data.data));
+          // Store user data and token separately
+          localStorage.setItem('currentUser', JSON.stringify(response.data.data.user));
+          localStorage.setItem('token', response.data.data.token);
           toast.success('Login successful!');
           window.location.href = '/home';
         }
@@ -203,48 +191,8 @@ const AuthPage = () => {
         // Signup logic
         const validatedData = signupSchema.parse(formData);
 
-        // Handle file uploads
-        let profilePictureUrl = null;
-
-        if (formData.profilePictureFile) {
-          try {
-            setLoadingStep('Uploading profile picture...');
-            const uploadUrl = getApiEndpoint('/s3/get-pre-signed-url');
-            const profileResponse = await axios.post(uploadUrl, {
-              fileName: formData.profilePictureFile.name,
-              fileType: formData.profilePictureFile.type,
-              folder: 'profiles'
-            }, {
-              timeout: 10000, // 10 second timeout
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-
-            // Upload the actual file to S3 using the pre-signed URL
-            const uploadResponse = await axios.put(profileResponse.data.data.uploadUrl, formData.profilePictureFile, {
-              headers: {
-                'Content-Type': formData.profilePictureFile.type
-              }
-            });
-
-            // Get the S3 file name for storage
-            const s3FileName = profileResponse.data.data.s3FileName;
-            profilePictureUrl = s3FileName;
-          } catch (error) {
-            console.error('Profile picture upload error');
-            if (error.code === 'ERR_NETWORK') {
-              throw new Error('Cannot connect to server. Please check if the backend is running.');
-            }
-            throw new Error('Failed to upload profile picture');
-          }
-        }
-
-
         const signupData = {
           ...validatedData,
-          profilePicture: profilePictureUrl || null,
-          profilePictureOriginalName: formData.profilePictureFile?.name || null,
         };
 
         // Clean up undefined values
@@ -259,7 +207,9 @@ const AuthPage = () => {
         const response = await axios.post(getApiEndpoint('/auth/signup'), signupData);
 
         if (response.data.success) {
-          localStorage.setItem('currentUser', JSON.stringify(response.data.data));
+          // Store user data and token separately
+          localStorage.setItem('currentUser', JSON.stringify(response.data.data.user));
+          localStorage.setItem('token', response.data.data.token);
           toast.success('Account created successfully!');
           window.location.href = '/home';
         }
@@ -291,8 +241,6 @@ const AuthPage = () => {
       username: '',
       password: '',
       contactNumber: '',
-      profilePicture: null,
-      profilePictureFile: null,
     });
     setErrors({});
   };
@@ -430,50 +378,9 @@ const AuthPage = () => {
               )}
 
 
-              {/* Step 2: Profile Picture (Signup only) */}
+
+              {/* Step 2: Complete (Signup only) */}
               {!isLogin && currentStep === 2 && (
-                <div className="auth-unique-form-step">
-                  <div className="auth-unique-profile-picture-header">
-                    <h3><Camera className="auth-unique-profile-icon" /> Add Your Photo (Optional)</h3>
-                    <p>Help others recognize you by adding a clear profile picture</p>
-                  </div>
-
-                  <div className="auth-unique-profile-picture-upload">
-                    <input
-                      type="file"
-                      name="profilePicture"
-                      onChange={handleInputChange}
-                      accept="image/*"
-                      id="profile-upload"
-                      className="auth-unique-file-input"
-                    />
-                    <label htmlFor="profile-upload" className="auth-unique-upload-area">
-                      {formData.profilePictureFile ? (
-                        <div className="auth-unique-uploaded-image">
-                          <img
-                            src={URL.createObjectURL(formData.profilePictureFile)}
-                            alt="Profile preview"
-                            className="auth-unique-preview-image"
-                          />
-                          <div className="auth-unique-upload-overlay">
-                            <Upload size={24} />
-                            <span>Change Photo</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="auth-unique-upload-placeholder">
-                          <Upload size={48} />
-                          <span>Click to upload photo</span>
-                          <p>JPG, PNG up to 5MB</p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Complete (Signup only) */}
-              {!isLogin && currentStep === 3 && (
                 <div className="auth-unique-form-step">
                   <div className="auth-unique-completion-header">
                     <h3><CheckCircle className="auth-unique-completion-icon" /> Review Your Information</h3>
@@ -489,12 +396,6 @@ const AuthPage = () => {
                       <span className="auth-unique-review-label">Contact:</span>
                       <span className="auth-unique-review-value">{formData.contactNumber}</span>
                     </div>
-                    {formData.profilePictureFile && (
-                      <div className="auth-unique-review-item">
-                        <span className="auth-unique-review-label">Profile Picture:</span>
-                        <span className="auth-unique-review-value">✓ Uploaded</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

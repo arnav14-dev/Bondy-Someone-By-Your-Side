@@ -9,8 +9,12 @@ import { Server } from 'socket.io';
 import connectDB from './src/utils/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import s3Routes from './src/routes/s3Routes.js';
+import cloudinaryRoutes from './src/routes/cloudinaryRoutes.js';
 import bookingRoutes from './src/routes/bookingRoutes.js';
 import userLocationRoutes from './src/routes/userLocationRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
+import paymentRoutes from './src/routes/paymentRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -27,7 +31,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: isProduction 
       ? process.env.CORS_ORIGIN?.split(',') || ['https://yourdomain.com']
-      : true,
+      : 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -42,10 +46,37 @@ app.use(helmet({
 // Compression middleware
 app.use(compression());
 
-// Rate limiting
+// CORS configuration - must be before rate limiting
+const corsOptions = {
+  origin: isProduction 
+    ? process.env.CORS_ORIGIN?.split(',') || ['https://yourdomain.com']
+    : [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://192.168.31.196:5173', // Current WiFi network
+        'http://192.168.0.100:5173',  // Previous WiFi network
+        'http://192.168.1.100:5173'   // Common home network
+      ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-User-Id', // Standard convention for custom headers
+    'UserId',
+    'user-id', // The exact header seen in your error log
+    'x-user-id',
+    'userId'
+  ],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Rate limiting - very lenient for development
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10000, // Very high limit for development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -57,7 +88,7 @@ const limiter = rateLimit({
 // More lenient rate limiting for S3 routes (images)
 const s3Limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Allow more requests for image loading
+  max: 20000, // Very high limit for image loading
   message: {
     success: false,
     message: 'Too many image requests from this IP, please try again later.'
@@ -66,21 +97,23 @@ const s3Limiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Very lenient rate limiting for admin routes
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50000, // Very high limit for admin operations
+  message: {
+    success: false,
+    message: 'Too many admin requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting after CORS
+app.use('/api/admin', adminLimiter);
 app.use('/api/', limiter);
 app.use('/api/s3', s3Limiter);
 
-// CORS configuration
-const corsOptions = {
-  origin: isProduction 
-    ? process.env.CORS_ORIGIN?.split(',') || ['https://yourdomain.com']
-    : true, // Allow any origin in development
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'user-id'],
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -96,8 +129,12 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/s3', s3Routes);
+app.use('/api/cloudinary', cloudinaryRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/user-locations', userLocationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -142,23 +179,70 @@ process.on('SIGINT', () => {
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-  
-  // Handle incoming messages
-  socket.on('message', (data) => {
-    console.log('Message received:', data);
+  console.log('User connected:', socket.id);
+
+  // Join user to their room
+  socket.on('join-user', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  // Join admin to admin room
+  socket.on('join-admin', (adminId) => {
+    socket.join(`admin-${adminId}`);
+    socket.join('admin-room');
+    console.log(`Admin ${adminId} joined admin room`);
+  });
+
+  // Join conversation room
+  socket.on('join-conversation', (conversationId) => {
+    socket.join(`conversation-${conversationId}`);
+    console.log(`User joined conversation ${conversationId}`);
+  });
+
+  // Handle new message
+  socket.on('new-message', (data) => {
+    const { conversationId, message, senderType } = data;
     
-    // Echo the message back to the client (for now)
-    // In a real app, you'd save to database and broadcast to other users
-    socket.emit('message', {
-      message: `Support: Thank you for your message: "${data.message}". Our team will respond shortly.`,
-      timestamp: new Date().toISOString()
+    // Broadcast to conversation room
+    socket.to(`conversation-${conversationId}`).emit('message-received', {
+      conversationId,
+      message,
+      senderType
+    });
+
+    // If user sent message, notify admins
+    if (senderType === 'user') {
+      socket.to('admin-room').emit('new-user-message', {
+        conversationId,
+        message
+      });
+    }
+  });
+
+  // Handle typing indicator
+  socket.on('typing', (data) => {
+    const { conversationId, isTyping, senderType } = data;
+    socket.to(`conversation-${conversationId}`).emit('user-typing', {
+      conversationId,
+      isTyping,
+      senderType
     });
   });
-  
+
+  // Handle conversation status update
+  socket.on('conversation-updated', (data) => {
+    const { conversationId, status, assignedAdmin } = data;
+    socket.to(`conversation-${conversationId}`).emit('conversation-status-changed', {
+      conversationId,
+      status,
+      assignedAdmin
+    });
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
+    console.log('User disconnected:', socket.id);
   });
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
 import Layout from "./components/Layout";
-import AuthPage from './pages/AuthPage.jsx';
+import AuthPage from './pages/authPage.jsx';
 import LoginPage from './pages/loginPage.jsx';
 import HomePage from './pages/homePage.jsx';
 import BookingPage from './pages/bookingPage.jsx';
@@ -11,8 +11,14 @@ import ProfilePage from './pages/profilePage.jsx';
 import AboutPage from './pages/aboutPage.jsx';
 import LocationManagementPage from './pages/locationManagementPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminProtectedRoute from './components/AdminProtectedRoute.jsx';
 import './App.css'
 import ContactPage from "./pages/contactPage.jsx";
+import AdminLoginPage from "./pages/adminLoginPage.jsx";
+import AdminDashboard from "./pages/adminDashboard.jsx";
+import AdminBookingsPage from "./pages/adminBookingsPage.jsx";
+import AdminChatPage from "./pages/adminChatPage.jsx";
+import AdminCompanionsPage from "./pages/adminCompanionsPage.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -23,13 +29,32 @@ function App() {
   useEffect(() => {
     // Load user from localStorage (like the real app)
     const userData = localStorage.getItem('currentUser');
-    if (userData) {
+    const token = localStorage.getItem('token');
+    
+    console.log('App loading - userData:', !!userData, 'token:', !!token);
+    console.log('App - localStorage contents:', {
+      currentUser: localStorage.getItem('currentUser') ? 'present' : 'missing',
+      token: localStorage.getItem('token') ? 'present' : 'missing',
+      allKeys: Object.keys(localStorage)
+    });
+    
+    if (userData && token) {
       try {
         const parsedUser = JSON.parse(userData);
+        console.log('App setting user:', parsedUser);
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
+        // Clear invalid data
+        console.log('App - clearing invalid data due to parse error');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
       }
+    } else {
+      console.log('App - no user data or token found, clearing partial data');
+      // Clear any partial data
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('token');
     }
     setIsLoading(false);
   }, []);
@@ -43,7 +68,9 @@ function App() {
   }, [user, location.pathname, navigate]);
 
   const handleLogout = () => {
+    console.log('App - handleLogout called, clearing localStorage');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
     setUser(null);
     navigate('/', { replace: true });
   };
@@ -138,10 +165,34 @@ function App() {
         <Route path='/contact' element={
           <ProtectedRoute>
             <Layout user={user} onLogout={handleLogout} onNavigate={handleNavigation} showFooter={false}>
-              <ContactPage />
+              <ContactPage user={user} />
             </Layout>
           </ProtectedRoute>
         } />
+        
+        {/* Admin Routes */}
+        <Route path='/admin/login' element={<AdminLoginPage />} />
+        <Route path='/admin/dashboard' element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
+        <Route path='/admin/bookings' element={
+          <AdminProtectedRoute>
+            <AdminBookingsPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path='/admin/companions' element={
+          <AdminProtectedRoute>
+            <AdminCompanionsPage />
+          </AdminProtectedRoute>
+        } />
+        <Route path='/admin/chat' element={
+          <AdminProtectedRoute>
+            <AdminChatPage />
+          </AdminProtectedRoute>
+        } />
+        
         {/* Fallback route */}
         <Route path='*' element={
           <div style={{ padding: "2rem" }}>

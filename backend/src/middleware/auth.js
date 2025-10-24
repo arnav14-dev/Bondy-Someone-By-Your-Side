@@ -1,22 +1,32 @@
+import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 
-// Middleware to verify if user is authenticated
+// JWT-based authentication middleware for users
 export const authenticateUser = async (req, res, next) => {
   try {
-    // Get user ID from request (could be from token, session, or header)
-    const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body.userId || req.query.userId;
+    const authHeader = req.headers.authorization;
     
-    
-    if (!userId) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. User ID required.',
+        message: 'Access denied. No token provided.',
         data: null
       });
     }
 
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    console.log('JWT decoded:', decoded);
+    console.log('Looking for user with ID:', decoded.userId);
+    
     // Find user in database
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(decoded.userId).select('-password');
+    console.log('User found:', !!user);
+    if (user) {
+      console.log('User details:', { id: user._id, username: user.username, contactNumber: user.contactNumber });
+    }
     
     if (!user) {
       return res.status(401).json({
@@ -26,11 +36,29 @@ export const authenticateUser = async (req, res, next) => {
       });
     }
 
-    // Add user to request object for use in route handlers
+    // Add user info to request object for use in route handlers
     req.user = user;
+    req.userId = user._id; // Add this for chat controller compatibility
     next();
   } catch (error) {
     console.error('Authentication error:', error);
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token',
+        data: null
+      });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired',
+        data: null
+      });
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'Authentication error',

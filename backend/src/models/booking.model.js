@@ -49,9 +49,29 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['', '18-25', '26-35', '36-50', '50+']
   },
+  userContact: {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100
+    },
+    email: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: 200
+    },
+    mobile: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 15
+    }
+  },
   emergencyContact: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
     maxlength: 200
   },
@@ -72,7 +92,16 @@ const bookingSchema = new mongoose.Schema({
   },
   assignedCompanion: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Companion',
+    default: null
+  },
+  assignedAt: {
+    type: Date,
+    default: null
+  },
+  assignedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
     default: null
   },
   notes: {
@@ -89,6 +118,40 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 500
+  },
+  payment: {
+    method: {
+      type: String,
+      enum: ['cod', 'online'],
+      default: null
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending'
+    },
+    amount: {
+      type: Number,
+      required: function() {
+        return this.payment && this.payment.method;
+      }
+    },
+    razorpayOrderId: {
+      type: String,
+      default: null
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null
+    },
+    razorpaySignature: {
+      type: String,
+      default: null
+    },
+    paidAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true

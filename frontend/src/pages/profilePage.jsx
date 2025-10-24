@@ -6,7 +6,6 @@ import Footer from '../components/Footer.jsx';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
-  const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
@@ -31,13 +30,7 @@ const ProfilePage = () => {
           contactNumber: userData.contactNumber || ''
         });
         
-        // Fetch profile image
-        if (userData.profilePicture) {
-          console.log('Profile picture found:', userData.profilePicture);
-          fetchProfileImage(userData.profilePicture, userData._id);
-        } else {
-          console.log('No profile picture found in user data');
-        }
+        // Profile picture functionality removed
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -46,32 +39,6 @@ const ProfilePage = () => {
     }
   };
 
-  const fetchProfileImage = async (s3FileName, userId) => {
-    try {
-      console.log('Fetching profile image:', { s3FileName, userId });
-      
-      const response = await fetch(`${BASE_API_URL}/api/s3/get-image-from-s3`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'user-id': userId || ''
-        },
-        body: JSON.stringify({ s3FileName }),
-      });
-
-      const data = await response.json();
-      console.log('Profile image response:', data);
-      
-      if (data.success) {
-        setProfileImageUrl(data.data.imageUrl);
-        console.log('Profile image URL set:', data.data.imageUrl);
-      } else {
-        console.error('Failed to fetch profile image:', data.message);
-      }
-    } catch (err) {
-      console.error('Error fetching profile image:', err);
-    }
-  };
 
   const fetchStats = async () => {
     try {
@@ -158,22 +125,9 @@ const ProfilePage = () => {
                 <div className="profile-image-section">
                   <div className="profile-image-wrapper">
                     <div className="profile-image-container">
-                      {profileImageUrl ? (
-                        <img
-                          src={profileImageUrl}
-                          alt="Profile"
-                          className="profile-image"
-                          onLoad={() => console.log('Profile image loaded successfully')}
-                          onError={(e) => {
-                            console.error('Profile image failed to load:', e);
-                            setProfileImageUrl(null);
-                          }}
-                        />
-                      ) : (
-                        <div className="profile-placeholder">
-                          👤
-                        </div>
-                      )}
+                      <div className="profile-placeholder">
+                        👤
+                      </div>
                     </div>
                     <div className="verification-badge">
                       ✓

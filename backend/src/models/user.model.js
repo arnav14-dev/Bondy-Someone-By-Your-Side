@@ -18,12 +18,6 @@ const userSchema = new mongoose.Schema({
         minlength: 8,  
         maxlength: 50,
     },
-    profilePicture:{
-        type: String,
-    },
-    profilePictureOriginalName:{
-        type: String,
-    },
     createdAt:{
         type: Date,
         default: Date.now()

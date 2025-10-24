@@ -1,38 +1,44 @@
 import { signupSchema, loginSchema } from '../zod/zod.Schema.js';
 import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 export const signup = async (req, res) => {
-    const { username, contactNumber, password, profilePicture, profilePictureOriginalName } = req.body;
+    const { username, contactNumber, password } = req.body;
 
     try {
         // Prepare data for validation
         const dataToValidate = { 
             username, 
             contactNumber, 
-            password, 
-            profilePicture, 
-            profilePictureOriginalName 
+            password
         };
 
         const validatedData = signupSchema.parse(dataToValidate);
 
-        // Remove null/undefined values for optional fields
-        const cleanData = { ...validatedData };
-        if (!cleanData.profilePicture || cleanData.profilePicture === null) {
-            delete cleanData.profilePicture;
-        }
-
-        const user = await User.create(cleanData);
+        const user = await User.create(validatedData);
 
         // Convert to object and remove sensitive data
         const userObj = user.toObject();
         delete userObj.password;
 
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: user._id, 
+                contactNumber: user.contactNumber 
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '7d' }
+        );
+
         return res.status(201).json({
             success: true,
             message: 'User created successfully',
-            data: userObj
+            data: {
+                user: userObj,
+                token: token
+            }
         });
 
     } catch (error) {
@@ -103,10 +109,23 @@ export const login = async (req, res) => {
         const userObj = user.toObject();
         delete userObj.password;
 
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: user._id, 
+                contactNumber: user.contactNumber 
+            },
+            process.env.JWT_SECRET || 'your-secret-key', // Use environment variable or fallback
+            { expiresIn: '7d' } // Token expires in 7 days
+        );
+
         return res.status(200).json({
             success: true,
             message: 'Login successful',
-            data: userObj
+            data: {
+                user: userObj,
+                token: token
+            }
         });
 
     } catch (error) {

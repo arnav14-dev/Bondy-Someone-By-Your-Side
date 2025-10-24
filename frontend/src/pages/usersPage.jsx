@@ -39,9 +39,6 @@ const UsersPage = () => {
 
     // Collect all S3 file names that need to be fetched
     usersData.forEach(user => {
-      if (user.profilePicture) {
-        s3FileNames.push(user.profilePicture);
-      }
       if (user.idImage) {
         s3FileNames.push(user.idImage);
       }
@@ -126,17 +123,9 @@ const UsersPage = () => {
                   <div className="user-card-content">
                     {/* Profile Picture */}
                     <div className="user-profile-image">
-                      {user.profilePicture && getImageUrl(user.profilePicture) ? (
-                        <img
-                          src={getImageUrl(user.profilePicture)}
-                          alt="Profile"
-                          className="profile-img"
-                        />
-                      ) : (
-                        <div className="profile-placeholder-small">
-                          👤
-                        </div>
-                      )}
+                      <div className="profile-placeholder-small">
+                        👤
+                      </div>
                     </div>
 
                     {/* User Details */}

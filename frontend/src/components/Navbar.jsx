@@ -290,8 +290,6 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState(null);
-  const [isLoadingImage, setIsLoadingImage] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -316,16 +314,6 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
     }
   }, [menuOpen]);
 
-  useEffect(() => {
-    
-    if (user?.profilePicture) {
-      // Fetch fresh data directly
-      fetchProfileImageOptimized(user.profilePicture, user._id || user.id);
-    } else {
-      setProfileImageUrl(null);
-      setIsLoadingImage(false);
-    }
-  }, [user]);
 
   // Cleanup retry timeouts on unmount
   useEffect(() => {
@@ -411,13 +399,28 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
       return;
     }
 
+    // Check if we've already tried to fetch this image recently (rate limiting protection)
+    const lastAttemptKey = `lastAttempt-${cacheKey}`;
+    const lastAttempt = localStorage.getItem(lastAttemptKey);
+    const now = Date.now();
+    const timeSinceLastAttempt = now - (lastAttempt ? parseInt(lastAttempt) : 0);
+    
+    // If we tried less than 30 seconds ago, don't try again
+    if (timeSinceLastAttempt < 30000) {
+      console.log('Rate limiting: Skipping image fetch, last attempt was', timeSinceLastAttempt, 'ms ago');
+      return;
+    }
+
     // Set loading state
     setIsLoadingImage(true);
 
-    // Set a timeout to stop loading after 15 seconds
+    // Set a timeout to stop loading after 10 seconds
     const loadingTimeout = setTimeout(() => {
       setIsLoadingImage(false);
-    }, 15000);
+    }, 10000);
+
+    // Record this attempt
+    localStorage.setItem(lastAttemptKey, now.toString());
 
     // Create new request
     const requestPromise = fetchProfileImage(s3FileName, userId, cacheKey);
@@ -485,13 +488,19 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found for profile image fetch');
+        return null;
+      }
+
       const url = `${BASE_API_URL}/api/s3/get-image-from-s3`;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': userId
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ s3FileName }),
         signal: controller.signal
@@ -525,8 +534,7 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
         }
       } else if (response.status === 429) {
         console.warn('Rate limited - too many image requests. Will retry later.');
-        // Schedule retry with exponential backoff
-        scheduleRetry(s3FileName, userId, cacheKey);
+        // Don't schedule retry immediately, let the rate limiting protection handle it
         return null;
       } else {
         const errorText = await response.text();
@@ -566,30 +574,12 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
               className="profile-section"
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
-              {profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt={user.username || 'Profile'}
-                  className="profile-avatar"
-                  onError={(e) => {
-                    console.error('Image failed to load:', e);
-                    setProfileImageUrl(null);
-                  }}
-                  onLoad={() => {
-                  }}
-                />
-              ) : (
-                <div className="profile-avatar-placeholder">
-                  {isLoadingImage ? (
-                    <div className="loading-spinner-small"></div>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                  )}
-                </div>
-              )}
+              <div className="profile-avatar-placeholder">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
 
               {dropdownOpen && (
                 <div className="dropdown-menu">
@@ -708,20 +698,12 @@ const Navbar = ({ user, onLogout, onNavigate }) => {
             <div className="mobile-profile-section">
               <div className="mobile-profile-info">
                 <div className="mobile-profile-avatar">
-                  {profileImageUrl ? (
-                    <img
-                      src={profileImageUrl}
-                      alt={user.username || 'Profile'}
-                      className="mobile-avatar-image"
-                    />
-                  ) : (
-                    <div className="mobile-avatar-placeholder">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                    </div>
-                  )}
+                  <div className="mobile-avatar-placeholder">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
                 </div>
                 <div className="mobile-profile-details">
                   <p className="mobile-profile-name">{user?.username || 'User'}</p>

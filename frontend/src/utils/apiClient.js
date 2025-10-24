@@ -10,11 +10,13 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add user ID to headers for protected routes
+// Request interceptor to add user ID and JWT token to headers for protected routes
 apiClient.interceptors.request.use(
   (config) => {
     // Get user ID from localStorage
     const currentUser = localStorage.getItem('currentUser');
+    const token = localStorage.getItem('token');
+    
     if (currentUser) {
       try {
         const user = JSON.parse(currentUser);
@@ -29,6 +31,14 @@ apiClient.interceptors.request.use(
     } else {
       console.warn('API Client - No user found in localStorage');
     }
+    
+    // Add JWT token to Authorization header
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn('API Client - No token found in localStorage');
+    }
+    
     return config;
   },
   (error) => {
@@ -41,9 +51,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // User is not authenticated, redirect to login
-      localStorage.removeItem('currentUser');
-      window.location.href = '/login';
+      console.log('API Client - 401 error received:', error.response?.data);
+      console.log('API Client - NOT redirecting automatically, letting component handle it');
+      // Don't automatically redirect - let the component handle 401 errors
+      // The ProtectedRoute should handle authentication, not the API client
     }
     return Promise.reject(error);
   }

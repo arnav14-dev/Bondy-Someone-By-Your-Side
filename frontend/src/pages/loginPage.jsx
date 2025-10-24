@@ -66,10 +66,12 @@ const LoginPage = () => {
         password: formData.password,
       });
       
-      // Store user data in localStorage for homepage
+      // Store user data and token in localStorage for homepage
       if (loginResponse.data.success) {
-        const userData = loginResponse.data.data;
+        const userData = loginResponse.data.data.user;
+        const token = loginResponse.data.data.token;
         localStorage.setItem('currentUser', JSON.stringify(userData));
+        localStorage.setItem('token', token);
         
         // Reset form after successful login
         setFormData({

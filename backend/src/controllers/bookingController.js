@@ -1,18 +1,33 @@
 import Booking from '../models/booking.model.js';
+import User from '../models/user.model.js';
 
 // Create a new booking
 export const createBooking = async (req, res) => {
   try {
     
     const userId = req.user._id;
+    
+    // Get user information
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        data: null
+      });
+    }
+
     const bookingData = {
       ...req.body,
-      userId
+      userId,
+      userContact: {
+        name: user.username,
+        mobile: user.contactNumber
+      }
     };
 
-
-    // Validate required fields
-    const requiredFields = ['serviceType', 'taskDescription', 'duration', 'date', 'time', 'location', 'emergencyContact'];
+    // Validate required fields (removed emergencyContact as it's now optional)
+    const requiredFields = ['serviceType', 'taskDescription', 'duration', 'date', 'time', 'location'];
     for (const field of requiredFields) {
       if (!bookingData[field]) {
         return res.status(400).json({
@@ -54,10 +69,28 @@ export const createBooking = async (req, res) => {
 
     const booking = await Booking.create(bookingData);
 
+    // Calculate amount based on duration (₹100 per hour)
+    const durationMap = {
+      '1': 1,
+      '2': 2,
+      '3': 3,
+      '4': 4,
+      '6': 6,
+      '8': 8,
+      'full-day': 8 // Full day is 8 hours
+    };
+
+    const hours = durationMap[booking.duration] || 2; // Default to 2 hours
+    const amount = hours * 100; // ₹100 per hour
+
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      data: booking
+      data: {
+        ...booking.toObject(),
+        calculatedAmount: amount,
+        hours: hours
+      }
     });
 
   } catch (error) {
@@ -90,7 +123,7 @@ export const getUserBookings = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('assignedCompanion', 'username contactNumber profilePicture');
+      .populate('assignedCompanion', 'name mobile specialties location');
 
     const total = await Booking.countDocuments(query);
 
@@ -125,7 +158,7 @@ export const getBooking = async (req, res) => {
     const userId = req.user._id;
 
     const booking = await Booking.findOne({ _id: bookingId, userId })
-      .populate('assignedCompanion', 'username contactNumber profilePicture governmentIdType');
+      .populate('assignedCompanion', 'name mobile specialties location');
 
     if (!booking) {
       return res.status(404).json({
@@ -306,8 +339,17 @@ export const getBookingStats = async (req, res) => {
           completedBookings: {
             $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
           },
+          confirmedBookings: {
+            $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] }
+          },
           pendingBookings: {
             $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          inProgressBookings: {
+            $sum: { $cond: [{ $eq: ['$status', 'in-progress'] }, 1, 0] }
+          },
+          cancelledBookings: {
+            $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
           },
           averageRating: { $avg: '$rating' }
         }
@@ -317,7 +359,10 @@ export const getBookingStats = async (req, res) => {
     const result = stats[0] || {
       totalBookings: 0,
       completedBookings: 0,
+      confirmedBookings: 0,
       pendingBookings: 0,
+      inProgressBookings: 0,
+      cancelledBookings: 0,
       averageRating: 0
     };
 

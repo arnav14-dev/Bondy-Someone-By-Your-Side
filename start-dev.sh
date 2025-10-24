@@ -17,7 +17,12 @@ check_port() {
 # Check if ports are available
 echo "Checking ports..."
 if ! check_port 3001; then
-    echo "Backend port 3001 is in use. Please stop the existing process or use a different port."
+    echo "Backend API port 3001 is in use. Please stop the existing process or use a different port."
+    exit 1
+fi
+
+if ! check_port 3005; then
+    echo "Socket.IO port 3005 is in use. Please stop the existing process or use a different port."
     exit 1
 fi
 
@@ -51,7 +56,8 @@ npm run dev &
 FRONTEND_PID=$!
 
 echo "Development servers started!"
-echo "Backend: http://localhost:3001"
+echo "Backend API: http://localhost:3001"
+echo "Socket.IO: http://localhost:3005"
 echo "Frontend: http://localhost:5173"
 echo ""
 echo "Press Ctrl+C to stop both servers"

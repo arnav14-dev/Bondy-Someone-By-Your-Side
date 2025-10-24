@@ -28,6 +28,9 @@ const getApiUrl = () => {
 
 export const BASE_API_URL = getApiUrl();
 
+// Razorpay configuration
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1234567890';
+
 // For direct API calls (like in authPage.jsx)
 export const getApiEndpoint = (endpoint) => {
   const baseUrl = getApiUrl();

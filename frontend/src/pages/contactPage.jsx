@@ -1,31 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../styles/contactPage.css';
 import io from 'socket.io-client';
+import toast from 'react-hot-toast';
 
-const ContactPage = () => {
-  // Get user data from localStorage
-  const [user, setUser] = useState(null);
+const ContactPage = ({ user: propUser }) => {
+  // Use user from props (passed from Layout) or fallback to localStorage
+  const [user, setUser] = useState(propUser || null);
   const [currentStep, setCurrentStep] = useState('questions'); // 'questions' or 'chat'
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [conversationId, setConversationId] = useState(null);
   const initialMessageAdded = useRef(false);
   const chatMessagesRef = useRef(null);
 
   // Load user data on component mount
   useEffect(() => {
+    // If user is passed as prop, use it
+    if (propUser) {
+      console.log('Contact page - Using user from props:', propUser);
+      setUser(propUser);
+      return;
+    }
+
+    // Fallback to localStorage if no prop user
     const userData = localStorage.getItem('currentUser');
-    if (userData) {
+    const token = localStorage.getItem('token');
+    
+    console.log('Contact page - User data from localStorage:', userData);
+    console.log('Contact page - Token from localStorage:', token ? 'Present' : 'Missing');
+    
+    if (userData && token) {
       try {
         const parsedUser = JSON.parse(userData);
+        console.log('Contact page - Parsed user from localStorage:', parsedUser);
         setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
       }
+    } else {
+      console.log('Contact page - User not authenticated');
+      console.log('Missing userData:', !userData);
+      console.log('Missing token:', !token);
+      // Don't redirect immediately, show a message instead
+      toast.error('Please log in to use chat support');
     }
-  }, []);
+  }, [propUser]);
 
   // Single card with 3 main questions + live chat option
   const mainQuestion = {
@@ -38,49 +63,137 @@ const ContactPage = () => {
     ]
   };
 
-  // Initialize socket connection
+  // Initialize socket connection and create conversation
   useEffect(() => {
-    if (currentStep === 'chat') {
+    if (currentStep === 'chat' && user) {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No token available for chat');
+        toast.error('Please log in to use chat support');
+        // Redirect to login page
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+
       const newSocket = io('http://localhost:3005');
       
       newSocket.on('connect', () => {
         setIsConnected(true);
-        addMessage('Customer Support', 'Hello! How can I help you today?', 'received');
+        // Create or get conversation when connected
+        createOrGetConversation();
       });
       
       newSocket.on('disconnect', () => {
         setIsConnected(false);
-        // Clear messages when disconnected
-        setMessages([]);
       });
 
-      newSocket.on('message', (data) => {
-        addMessage('Customer Support', data.message, 'received');
-        
-        // Aggressive scroll when admin message is received
-        setTimeout(() => {
-          scrollToBottom();
-        }, 10);
-        setTimeout(() => {
-          scrollToBottom();
-        }, 100);
-        setTimeout(() => {
-          scrollToBottom();
-        }, 300);
-        setTimeout(() => {
-          scrollToBottom();
-        }, 600);
+      newSocket.on('message-received', (data) => {
+        addMessage('Customer Support', data.message.content, 'received');
+        scrollToBottom();
+      });
+
+      newSocket.on('new-user-message', (data) => {
+        // This is for admin notifications, not needed on user side
       });
 
       setSocket(newSocket);
 
       return () => {
         newSocket.close();
-        // Clear messages when component unmounts
-        setMessages([]);
       };
     }
-  }, [currentStep]);
+  }, [currentStep, user]);
+
+  // Create or get conversation
+  const createOrGetConversation = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No authentication token found. User needs to be logged in.');
+        toast.error('Please log in to use chat support');
+        return;
+      }
+
+      console.log('Creating conversation with token:', token.substring(0, 20) + '...');
+      
+      const response = await fetch('http://localhost:3001/api/chat/user/conversation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: 'Live Chat Support',
+          priority: 'normal'
+        })
+      });
+
+      console.log('Conversation response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Conversation created successfully:', data);
+        console.log('Conversation data structure:', JSON.stringify(data.data, null, 2));
+        if (data.success) {
+          const conversationId = data.data.conversation._id;
+          console.log('Setting conversation ID to:', conversationId);
+          setConversationId(conversationId);
+          // Load existing messages
+          loadMessages(conversationId);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to create conversation:', errorData);
+        toast.error('Failed to start chat. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error('Error starting chat. Please try again.');
+    }
+  };
+
+  // Load messages for conversation
+  const loadMessages = async (convId) => {
+    try {
+      console.log('Loading messages for conversation ID:', convId, 'Type:', typeof convId);
+      
+      if (!convId || convId === 'undefined') {
+        console.error('Invalid conversation ID:', convId);
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3001/api/chat/user/conversation/${convId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data && data.data.messages) {
+          const formattedMessages = data.data.messages.map(msg => ({
+            id: msg._id,
+            text: msg.content,
+            sender: msg.sender.role === 'user' ? 'user' : 'received',
+            timestamp: msg.createdAt
+          }));
+          setMessages(formattedMessages);
+        } else {
+          console.log('No messages found or invalid response structure:', data);
+          setMessages([]);
+        }
+      } else {
+        console.error('Failed to load messages:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
 
   // Add initial bot message only once when component mounts
   useEffect(() => {
@@ -93,7 +206,7 @@ const ContactPage = () => {
   const addMessage = (sender, text, type) => {
     const now = new Date();
     const message = {
-      id: Date.now(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       sender,
       text,
       type,
@@ -207,7 +320,7 @@ const ContactPage = () => {
       // Instant bot responses with typing effect
       const responses = {
         "I need help with booking process": "To book a Bondy service:\n\n1. Go to 'Book Bondy' page\n2. Select your service type\n3. Choose date & time\n4. Fill in your details\n\nIt's that simple! Takes just 2-3 minutes. 😊",
-        "I want to know about available services": "🎯 We offer 3 main services:\n\n• Technology Help - Phone/computer assistance\n• Social Outings - Companionship for activities\n• Administrative Tasks - Paperwork & errands\n\nEach service is designed for elderly users' daily needs!",
+        "I want to know about available services": "🎯 We offer 5 main services:\n\n• Elderly Companionship - Personal care and walk assistance\n• Errands & Groceries - Shopping and general errands\n• Medical Support - Doctor visits, pharmacy trips, and night care\n• Kid's Escort & Care - Safe pick-up and drop-off for children\n• Household Assistant - Home assistance including meal service and organization\n\nEach service is designed for elderly users' daily needs!",
         "I have payment issues": "💳 We accept multiple payment methods:\n\n• Credit/Debit cards\n• UPI payments\n• Net banking\n\nIf you're having issues, please check your payment method or contact our support team for immediate assistance."
       };
 
@@ -229,29 +342,63 @@ const ContactPage = () => {
     }
   };
 
-  const sendMessage = () => {
-    if (newMessage.trim() && socket) {
-      addMessage('You', newMessage, 'sent');
-      socket.emit('message', {
-        message: newMessage,
-        userId: user?._id,
-        username: user?.username || 'Guest'
-      });
-      setNewMessage('');
-      
-      // Multiple aggressive attempts to scroll to bottom
-      setTimeout(() => {
-        scrollToBottom();
-      }, 10);
-      setTimeout(() => {
-        scrollToBottom();
-      }, 50);
-      setTimeout(() => {
-        scrollToBottom();
-      }, 150);
-      setTimeout(() => {
-        scrollToBottom();
-      }, 300);
+  const sendMessage = async () => {
+    if (newMessage.trim() && conversationId) {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          console.error('No authentication token found');
+          toast.error('Please log in to send messages');
+          return;
+        }
+
+        console.log('Sending message:', newMessage, 'to conversation:', conversationId);
+        
+        const response = await fetch(`http://localhost:3001/api/chat/user/conversation/${conversationId}/message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            content: newMessage,
+            messageType: 'text'
+          })
+        });
+
+        console.log('Send message response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Message sent successfully:', data);
+          if (data.success) {
+            addMessage('You', newMessage, 'sent');
+            
+            // Emit socket event for real-time updates
+            if (socket) {
+              socket.emit('new-message', {
+                conversationId: conversationId,
+                message: data.data,
+                senderType: 'user'
+              });
+            }
+            
+            setNewMessage('');
+            scrollToBottom();
+          }
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to send message:', errorData);
+          toast.error('Failed to send message. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        toast.error('Error sending message. Please try again.');
+      }
+    } else if (!conversationId) {
+      console.error('No conversation ID available');
+      toast.error('Chat not initialized. Please refresh the page.');
     }
   };
 
@@ -365,21 +512,35 @@ const ContactPage = () => {
             </div>
 
             <div className="chat-input">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                disabled={!isConnected}
-              />
-              <button 
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || !isConnected}
-                className="send-btn"
-              >
-                Send
-              </button>
+              {user ? (
+                <>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message..."
+                    disabled={!isConnected}
+                  />
+                  <button 
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || !isConnected}
+                    className="send-btn"
+                  >
+                    Send
+                  </button>
+                </>
+              ) : (
+                <div className="login-prompt">
+                  <p>Please log in to use chat support</p>
+                  <button 
+                    onClick={() => window.location.href = '/login'}
+                    className="login-btn"
+                  >
+                    Go to Login
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

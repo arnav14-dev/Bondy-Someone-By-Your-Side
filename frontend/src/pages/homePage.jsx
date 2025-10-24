@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import '../styles/homePage.css';
-import { BASE_API_URL } from '../config/api.js';
-import apiClient from '../utils/apiClient.js';
 import { 
   isRequestInProgress, 
   markRequestInProgress, 
@@ -16,99 +14,35 @@ import '../utils/requestTracker.js';
 const HomePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isLoadingProfileImage, setIsLoadingProfileImage] = useState(false);
-  const requestInProgress = useRef(false);
-  const hasAttemptedFetch = useRef(false);
 
 
   useEffect(() => {
+    // Debug: Show current authentication status
+    const currentUser = localStorage.getItem('currentUser');
+    const token = localStorage.getItem('token');
+    console.log('HomePage - Auth Debug:', {
+      hasUser: !!currentUser,
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+      userData: currentUser ? JSON.parse(currentUser) : null
+    });
+    
     // Get user data from localStorage (set during signup)
     const userData = localStorage.getItem('currentUser');
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       
-      // Fetch profile image if user has one
-      if (parsedUser.profilePicture && !isLoadingProfileImage) {
-        fetchProfileImageWithUser(parsedUser, parsedUser.profilePicture);
-      } else {
-        setLoading(false);
-      }
+      // Profile picture functionality removed
+      setLoading(false);
     } else {
       setError('No user data found. Please sign up first.');
       setLoading(false);
     }
-  }, [isLoadingProfileImage]);
+  }, []);
 
-  const fetchProfileImageWithUser = async (userData, s3FileName) => {
-    const userId = userData?._id || userData?.id;
-    const globalKey = `profile-image-${userId}-${s3FileName}`;
-    
-    // AGGRESSIVE: If we've already attempted to fetch this image, don't try again
-    if (hasAttemptedFetch.current) {
-      setLoading(false);
-      return;
-    }
-
-    // Check global tracker first - if request is already in progress, abort immediately
-    if (isRequestInProgress(globalKey)) {
-      setLoading(false);
-      return;
-    }
-
-    // Check if we already have this image or request is in progress locally
-    if (requestInProgress.current || profileImageUrl) {
-      setLoading(false);
-      return;
-    }
-
-    // Check cache first
-    const cacheKey = `${userId}-${s3FileName}`;
-    const cachedUrl = getCachedResponse(cacheKey);
-    if (cachedUrl) {
-      setProfileImageUrl(cachedUrl);
-      setLoading(false);
-      return;
-    }
-
-    // Mark as attempted and in progress globally and locally
-    hasAttemptedFetch.current = true;
-    markRequestInProgress(globalKey);
-    requestInProgress.current = true;
-    setIsLoadingProfileImage(true);
-    
-    try {
-      const response = await fetch(`${BASE_API_URL}/api/s3/get-image-from-s3`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'user-id': userId || ''
-        },
-        body: JSON.stringify({ s3FileName }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.success && data.data?.imageUrl) {
-          // Cache the successful result
-          setCachedResponse(cacheKey, data.data.imageUrl);
-          setProfileImageUrl(data.data.imageUrl);
-        }
-      }
-    } catch (err) {
-      // Silently handle errors to prevent security breaches
-      // No console logging of sensitive data
-    } finally {
-      markRequestComplete(globalKey);
-      requestInProgress.current = false;
-      setIsLoadingProfileImage(false);
-      setLoading(false);
-    }
-  };
 
   const handleBookBondy = () => {
     navigate('/booking');
@@ -309,22 +243,29 @@ const HomePage = () => {
                     <path d="M9 18v.01"/>
                   </svg>
                 </div>
-                <h3 className="service-title">Medical Appointments</h3>
+                <h3 className="service-title">Medical Support</h3>
                 <p className="service-description">
-                  Safe transportation and a supportive presence for doctor visits and therapies.
+                  Safe transportation and a supportive presence for doctor visits, therapies, and night care.
                 </p>
               </div>
               <div className="service-card">
-                <div className="service-icon tech-icon">
+                <div className="service-icon kids-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2Z"/>
+                    <path d="M21 9V7L15 5.5V7L21 9Z"/>
+                    <path d="M3 9V7L9 5.5V7L3 9Z"/>
+                    <path d="M12 8C8.7 8 6 10.7 6 14V16H18V14C18 10.7 15.3 8 12 8Z"/>
+                    <path d="M8 20H16"/>
+                    <path d="M10 18V20"/>
+                    <path d="M14 18V20"/>
+                    <circle cx="9" cy="12" r="1"/>
+                    <circle cx="15" cy="12" r="1"/>
+                    <path d="M12 13V15"/>
                   </svg>
                 </div>
-                <h3 className="service-title">Technology Help</h3>
+                <h3 className="service-title">Kid's Escort & Care</h3>
                 <p className="service-description">
-                  Patient assistance with smartphones, computers, video calls, and setting up new devices.
+                  Safe and reliable pick-up and drop-off services for children to school, activities, and appointments.
                 </p>
               </div>
               <div className="service-card">
@@ -336,24 +277,9 @@ const HomePage = () => {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                   </svg>
                 </div>
-                <h3 className="service-title">Social Outings</h3>
+                <h3 className="service-title">Household Assistant</h3>
                 <p className="service-description">
-                  A friendly partner for walks, museum visits, dining out, or other local activities.
-                </p>
-              </div>
-              <div className="service-card">
-                <div className="service-icon admin-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                </div>
-                <h3 className="service-title">Administrative Tasks</h3>
-                <p className="service-description">
-                  Help with simple paperwork, organizing mail, and scheduling reminders.
+                  Comprehensive home assistance including serving food, decoration, cleaning, and vessel maintenance.
                 </p>
               </div>
             </div>

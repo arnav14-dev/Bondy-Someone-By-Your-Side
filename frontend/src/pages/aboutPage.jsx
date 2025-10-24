@@ -158,19 +158,26 @@ const AboutPage = () => {
                   <path d="M9 18v.01"/>
                 </svg>
               </div>
-              <h3>Medical Appointments</h3>
-              <p>Safe transportation and supportive presence for doctor visits and therapies.</p>
+              <h3>Medical Support</h3>
+              <p>Safe transportation and supportive presence for doctor visits, therapies, and night care.</p>
             </div>
             <div className="service-item">
               <div className="service-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2Z"/>
+                  <path d="M21 9V7L15 5.5V7L21 9Z"/>
+                  <path d="M3 9V7L9 5.5V7L3 9Z"/>
+                  <path d="M12 8C8.7 8 6 10.7 6 14V16H18V14C18 10.7 15.3 8 12 8Z"/>
+                  <path d="M8 20H16"/>
+                  <path d="M10 18V20"/>
+                  <path d="M14 18V20"/>
+                  <circle cx="9" cy="12" r="1"/>
+                  <circle cx="15" cy="12" r="1"/>
+                  <path d="M12 13V15"/>
                 </svg>
               </div>
-              <h3>Technology Help</h3>
-              <p>Patient assistance with smartphones, computers, video calls, and new devices.</p>
+              <h3>Kid's Escort & Care</h3>
+              <p>Safe and reliable pick-up and drop-off services for children to school, activities, and appointments.</p>
             </div>
             <div className="service-item">
               <div className="service-icon">
@@ -181,21 +188,8 @@ const AboutPage = () => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
               </div>
-              <h3>Social Outings</h3>
-              <p>A friendly partner for walks, museum visits, dining out, or local activities.</p>
-            </div>
-            <div className="service-item">
-              <div className="service-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10,9 9,9 8,9"/>
-                </svg>
-              </div>
-              <h3>Administrative Tasks</h3>
-              <p>Help with paperwork, organizing mail, and scheduling reminders.</p>
+              <h3>Household Assistant</h3>
+              <p>Comprehensive home assistance including serving food, decoration, cleaning, and vessel maintenance.</p>
             </div>
           </div>
         </div>
